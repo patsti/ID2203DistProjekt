@@ -52,7 +52,7 @@ public class Main {
     		 System.out.println("Starting Node");
     		 // no shutdown this time...act like a server and keep running until externally exited
 	          try {
-	              Thread.sleep(10000);
+	              Thread.sleep(1000);
 	          } catch (InterruptedException ex) {
 	              System.exit(1);
 	          }

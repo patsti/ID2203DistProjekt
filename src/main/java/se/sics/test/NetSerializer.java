@@ -90,12 +90,14 @@ public class NetSerializer implements Serializer {
             InetAddress ip = InetAddress.getByAddress(ipBytes);
             int port = buf.readUnsignedShort(); // 2 bytes
             int idLength = buf.readByte(); // 1 byte
+            String allPorts = "34567,34568,34569";
+            String[] ports = allPorts.split(",");
             if (idLength >= 0) {
                 byte[] id = new byte[idLength]; // should be 4 bytes
                 buf.readBytes(id);
-                return new TAddress(ip, port, id);
+                return new TAddress(ip, port, id,ports);
             } else {
-                return new TAddress(ip, port); // total of 6, check
+                return new TAddress(ip, port,ports); // total of 6, check
             }
         } catch (UnknownHostException ex) {
             throw new RuntimeException(ex); // let Netty deal with this

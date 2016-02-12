@@ -3,6 +3,7 @@ package se.sics.test;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.util.Arrays;
+import java.util.List;
 import java.util.Objects;
 import se.sics.kompics.network.Address;
 
@@ -10,14 +11,16 @@ public class TAddress implements se.sics.kompics.network.virtual.Address {
 
     private final InetSocketAddress isa;
     private final byte[] id;
+    private final String[] allPorts;
 
-    public TAddress(InetAddress addr, int port) {
-        this(addr, port, null);
+    public TAddress(InetAddress addr, int port, String[] allip) {
+    	this(addr, port, null, allip);
     }
 
-    public TAddress(InetAddress addr, int port, byte[] id) {
+    public TAddress(InetAddress addr, int port, byte[] id, String[] allPorts) {
         this.isa = new InetSocketAddress(addr, port);
         this.id = id;
+        this.allPorts = allPorts;
     }
 
     @Override
@@ -35,8 +38,13 @@ public class TAddress implements se.sics.kompics.network.virtual.Address {
         return this.id;
     }
     
+    public String[] getAllPorts(){
+    	return this.allPorts;
+    }
+    
+    
     public TAddress withVirtual(byte[] id) {
-        return new TAddress(isa.getAddress(), isa.getPort(), id);
+        return new TAddress(isa.getAddress(), isa.getPort(), id, allPorts);
     }
 
     @Override

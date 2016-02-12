@@ -15,8 +15,10 @@ public class TAddressConverter implements Converter<TAddress> {
                 Map m = (Map) o;
                 String hostname = Conversions.convert(m.get("host"), String.class);
                 int port = Conversions.convert(m.get("port"), Integer.class);
+                String allPorts = Conversions.convert(m.get("ports"), String.class);
+                String[] ports = allPorts.split(",");
                 InetAddress ip = InetAddress.getByName(hostname);
-                return new TAddress(ip, port);
+                return new TAddress(ip, port, ports);
             } catch (UnknownHostException ex) {
                 return null;
             }
