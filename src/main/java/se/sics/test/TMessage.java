@@ -42,7 +42,7 @@ public class TMessage implements Msg<TAddress, THeader>, PatternExtractor<Class,
 
     @Override
     public Class extractPattern() {
-        return (Class<Pong>) payload.getClass();
+        return /*(Class<Pong>)*/ payload.getClass();
     }
 
     @Override
