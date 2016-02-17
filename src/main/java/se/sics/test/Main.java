@@ -20,29 +20,6 @@ public class Main {
         // conversions
         Conversions.register(new TAddressConverter());
     }
-
-//    public static void main(String[] args) {
-//        if (args.length == 1) {
-//            if (args[0].equalsIgnoreCase("ponger")) {
-//                Kompics.createAndStart(PongerParent.class, 2);
-//                System.out.println("Starting Ponger");
-//                // no shutdown this time...act like a server and keep running until externally exited
-//            } else if (args[0].equalsIgnoreCase("pinger")) {
-//                Kompics.createAndStart(PingerParent.class, 2);
-//                System.out.println("Starting Pinger");
-//                try {
-//                    Thread.sleep(10000);
-//                } catch (InterruptedException ex) {
-//                    System.exit(1);
-//                }
-//                Kompics.shutdown();
-//                System.exit(0);
-//            }
-//        } else {
-//            System.err.println("Invalid number of parameters");
-//            System.exit(1);
-//        }
-//    }
     
     public static void main(String[] args){
      

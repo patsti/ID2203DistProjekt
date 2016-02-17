@@ -1,11 +1,10 @@
 package se.sics.test;
 
-import java.awt.List;
 import java.util.ArrayList;
 import java.util.LinkedList;
 
-import com.google.common.primitives.Ints;
-
+import ports.BebPort;
+import se.sics.beb.BEBroadcast;
 import se.sics.kompics.Channel;
 import se.sics.kompics.Component;
 import se.sics.kompics.ComponentDefinition;
@@ -17,6 +16,7 @@ import se.sics.kompics.network.netty.NettyInit;
 import se.sics.kompics.network.netty.NettyNetwork;
 import se.sics.kompics.timer.Timer;
 import se.sics.kompics.timer.java.JavaTimer;
+import se.sics.storage.Storage;
 
 public class NodeParent extends ComponentDefinition{
 	
@@ -28,15 +28,20 @@ public class NodeParent extends ComponentDefinition{
         for(TAddress addr: addresses){
             Component timer = create(JavaTimer.class, Init.NONE);
             Component network = create(NettyNetwork.class, new NettyInit(addr));
+            Component storage = create(Storage.class, Init.NONE);
+            Component beb = create(BEBroadcast.class, Init.NONE);
+
             
             Config.Builder cbuild = config().modify(id());
             cbuild.setValue("project.self", addr);
             Component node = create(Node.class, Init.NONE, cbuild.finalise());
             
+            connect(node.getNegative(BebPort.class), beb.getPositive(BebPort.class), Channel.TWO_WAY);
+            connect(storage.getNegative(Network.class), network.getPositive(Network.class), Channel.TWO_WAY);
+            connect(beb.getNegative(Network.class), network.getPositive(Network.class), Channel.TWO_WAY);
             connect(node.getNegative(Timer.class), timer.getPositive(Timer.class), Channel.TWO_WAY);
             connect(node.getNegative(Network.class), network.getPositive(Network.class), Channel.TWO_WAY);
         }
-        
     }
     
     private void getAddresses(){

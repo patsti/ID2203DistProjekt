@@ -1,4 +1,4 @@
-package se.sics.test;
+package se.sics.pingpong;
 
 import se.sics.kompics.Channel;
 import se.sics.kompics.Component;
@@ -7,6 +7,7 @@ import se.sics.kompics.Init;
 import se.sics.kompics.network.Network;
 import se.sics.kompics.network.netty.NettyInit;
 import se.sics.kompics.network.netty.NettyNetwork;
+import se.sics.test.TAddress;
 
 public class PongerParent extends ComponentDefinition {
 

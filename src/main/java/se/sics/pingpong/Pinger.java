@@ -1,4 +1,4 @@
-package se.sics.test;
+package se.sics.pingpong;
 
 import java.util.UUID;
 import org.slf4j.Logger;
@@ -14,6 +14,10 @@ import se.sics.kompics.timer.CancelPeriodicTimeout;
 import se.sics.kompics.timer.SchedulePeriodicTimeout;
 import se.sics.kompics.timer.Timeout;
 import se.sics.kompics.timer.Timer;
+import se.sics.test.Ping;
+import se.sics.test.Pong;
+import se.sics.test.TAddress;
+import se.sics.test.TMessage;
 
 public class Pinger extends ComponentDefinition {
 

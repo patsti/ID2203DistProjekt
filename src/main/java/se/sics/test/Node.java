@@ -8,6 +8,8 @@ import java.util.UUID;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import ports.BebPort;
+import se.sics.beb.BroadcastGet;
 import se.sics.kompics.ClassMatchedHandler;
 import se.sics.kompics.ComponentDefinition;
 import se.sics.kompics.Handler;
@@ -21,25 +23,31 @@ import se.sics.kompics.timer.CancelPeriodicTimeout;
 import se.sics.kompics.timer.SchedulePeriodicTimeout;
 import se.sics.kompics.timer.Timeout;
 import se.sics.kompics.timer.Timer;
-import se.sics.test.Pinger.PingTimeout;
+import se.sics.pingpong.Pinger.PingTimeout;
+import se.sics.storage.GetOperationReply;
+import se.sics.storage.GetOperationRequest;
+import se.sics.storage.GetOperationRequestFromClient;
 
 public class Node extends ComponentDefinition {
 	
-    private static final Logger LOG = LoggerFactory.getLogger(Pinger.class);
+    private static final Logger LOG = LoggerFactory.getLogger(Node.class);
 	
     Positive<Network> net = requires(Network.class);
     Positive<Timer> timer = requires(Timer.class);
+    Positive<BebPort> beb = requires(BebPort.class);
 
     private long counter = 0;
     private UUID timerId;
     private final TAddress self;
     private TAddress predecessor;
     private TAddress successor;
+	private HashMap<Integer, String> storage = new HashMap<>();
+	private HashMap<Integer, String> replica = new HashMap<>();
 
     private ArrayList<TAddress> addresses = new ArrayList<>();
     private ArrayList<TAddress> replicationAddresses = new ArrayList<>();
     
-    private HashMap<Integer, ArrayList<Integer>> storage = new HashMap<>();
+   
 
     public Node() {
         this.self = config().getValue("project.self", TAddress.class);
@@ -84,7 +92,7 @@ public class Node extends ComponentDefinition {
         @Override
         public void handle(Pong content, TMessage context) {
             counter++;
-//            LOG.info("Got Pong #{}!", counter);
+
             if(!self.equals(context.getSource()))
             	LOG.info("["+self.toString()+"]"+" Got Pong #{}!"+" from ["+context.getSource().toString()+"]", counter);
         }
@@ -94,7 +102,6 @@ public class Node extends ComponentDefinition {
         @Override
         public void handle(Ping content, TMessage context) {
             counter++;
-//            LOG.info("Got Ping #{}!", counter);
             LOG.info("["+self.toString()+"]"+" Got a Ping #{}!"+" from ["+context.getSource().toString()+"]", counter);
             trigger(new TMessage(self, context.getSource(), Transport.TCP, new Pong()), net);
         }
@@ -104,17 +111,38 @@ public class Node extends ComponentDefinition {
     Handler<PingTimeout> timeoutHandler = new Handler<PingTimeout>() {
         @Override
         public void handle(PingTimeout event) {
-        	for(TAddress addr: replicationAddresses){
-        		trigger(new TMessage(self, addr, Transport.TCP, new Ping()), net);
-        	}
+        	trigger(new BroadcastGet(self, replicationAddresses, new GetOperationRequest(1337)), beb);
+//        	for(TAddress addr: replicationAddresses){
+//        		trigger(new TMessage(self, addr, Transport.TCP, new Ping()), net);
+//        	}
         }
     };
+    
+    
+    
+    ClassMatchedHandler<GetOperationRequestFromClient, TMessage> getOperationHandler = new ClassMatchedHandler<GetOperationRequestFromClient, TMessage>() {
+
+        @Override
+        public void handle(GetOperationRequestFromClient content, TMessage context) {
+        	//trigger BEB-broadcast with GetOperationRequest-event to all neighbours
+        }
+    };
+    
+    ClassMatchedHandler<GetOperationReply, TMessage> getReplyHandler = new ClassMatchedHandler<GetOperationReply, TMessage>() {
+
+        @Override
+        public void handle(GetOperationReply content, TMessage context) {
+        	LOG.info("With my key: "+content.getKey()+" I got: "+content.getValue());
+        }
+    };
+    
 
     {
         subscribe(startHandler, control);
-        subscribe(pongHandler, net);
         subscribe(timeoutHandler, timer);
         subscribe(pingHandler, net);
+        subscribe(getOperationHandler, net);
+        subscribe(getReplyHandler, net);
     }
 
     @Override

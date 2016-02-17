@@ -1,4 +1,4 @@
-package se.sics.test;
+package se.sics.pingpong;
 
 import com.google.common.primitives.Ints;
 import se.sics.kompics.Channel;
@@ -12,6 +12,7 @@ import se.sics.kompics.network.netty.NettyNetwork;
 import se.sics.kompics.network.virtual.VirtualNetworkChannel;
 import se.sics.kompics.timer.Timer;
 import se.sics.kompics.timer.java.JavaTimer;
+import se.sics.test.TAddress;
 
 public class PingerParent extends ComponentDefinition {
 
