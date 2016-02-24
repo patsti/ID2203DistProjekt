@@ -2,6 +2,7 @@ package se.sics.test;
 
 import java.net.InetAddress;
 import java.net.UnknownHostException;
+import java.util.List;
 import java.util.Map;
 import se.sics.kompics.config.Conversions;
 import se.sics.kompics.config.Converter;
@@ -30,6 +31,7 @@ public class TAddressConverter implements Converter<TAddress> {
                 return null;
             }
         }
+
         return null;
     }
 

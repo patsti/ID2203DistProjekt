@@ -1,4 +1,4 @@
-package se.sics.test;
+package se.sics.pingpong;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -7,6 +7,10 @@ import se.sics.kompics.ComponentDefinition;
 import se.sics.kompics.Positive;
 import se.sics.kompics.network.Network;
 import se.sics.kompics.network.Transport;
+import se.sics.test.Ping;
+import se.sics.test.Pong;
+import se.sics.test.TAddress;
+import se.sics.test.TMessage;
 
 public class Ponger extends ComponentDefinition {
 
