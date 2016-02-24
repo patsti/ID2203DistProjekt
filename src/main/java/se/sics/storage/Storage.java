@@ -2,13 +2,17 @@ package se.sics.storage;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Random;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import init.InitStorage;
+import ports.StoragePort;
 import se.sics.kompics.ClassMatchedHandler;
 import se.sics.kompics.ComponentDefinition;
 import se.sics.kompics.Handler;
+import se.sics.kompics.Negative;
 import se.sics.kompics.Positive;
 import se.sics.kompics.Start;
 import se.sics.kompics.network.Network;
@@ -16,6 +20,7 @@ import se.sics.kompics.network.Transport;
 import se.sics.kompics.timer.SchedulePeriodicTimeout;
 import se.sics.test.Node;
 import se.sics.test.Pong;
+import se.sics.test.TAddress;
 import se.sics.test.TMessage;
 import se.sics.test.Node.PingTimeout;
 
@@ -26,19 +31,40 @@ public class Storage extends ComponentDefinition {
 	private HashMap<Integer, String> replica1 = new HashMap<>();
 	private HashMap<Integer, String> replica2 = new HashMap<>();
 	private int id;
+	private int min;
+	private int max;
+	private TAddress self;
 	
 	Positive<Network> net = requires(Network.class);
+	Negative<StoragePort> storagePort = provides(StoragePort.class);
 
 	public Storage(){
-		storage.put(1337, "senaps frö");
+		
 	}
 	
     Handler<Start> startHandler = new Handler<Start>() {
         @Override
         public void handle(Start event) {
         	id = 1;
-        	LOG.info("[JHFLKJHVKLJDHNLKJVNLKJNBFLKJNVÖFLKNBLKFJNBKLFNVÖLKENBLKJNDLJKVBLKJNVDKB DLKÖNVBV]");
         }
+    };
+    
+    Handler<InitStorage> initHandler = new Handler<InitStorage>(){
+    	
+    	@Override
+    	public void handle(InitStorage event){
+    		id = event.getId();
+    		min = event.getMin();
+    		max = event.getMax();
+    		self = event.getSelf();
+    		
+            for(int i = 0; i < 5; i++){
+            	Random rand = new Random();
+            	LOG.info("Inside of me!");
+            	int key = rand.nextInt(max-min+1)+min;
+            	storage.put(key, "Ain't no holla back girl");
+            }
+    	}
     };
     
     
@@ -48,17 +74,19 @@ public class Storage extends ComponentDefinition {
         public void handle(GetOperationRequest content, TMessage context) {
         	int key = content.getKey();
         	if(!storage.containsKey(key)){
-        		LOG.info("[GetOperation] key: {} isn't in my range",key);
+        		LOG.info("[GetOperation] key: {} isn't in my range: My address is: {}",key, self.getPort());
         	}else{
         		String value = storage.get(key);
-        		LOG.info("[GetOperation] key: {} value: {}",key, value);
-        		trigger(new TMessage(context.getSource(), context.getSource(), Transport.TCP, new GetOperationReply(key, value)), net);
+        		LOG.info("[GetOperation] From: {} key: {} value: {} - Sending it back to: {}",self.getPort() ,key, value, context.getSource().getPort());
+        		trigger(new TMessage(self, context.getSource(), Transport.TCP, new GetOperationReply(key, value)), net);
         	}
         }
     };	
     
     {
     	subscribe(getOperationRequestHandler, net);
+    	subscribe(initHandler, storagePort);
     }
+      
     
     }

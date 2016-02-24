@@ -3,16 +3,20 @@ package se.sics.test;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedList;
+import java.util.Random;
 import java.util.UUID;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import init.InitStorage;
 import ports.BebPort;
+import ports.StoragePort;
 import se.sics.beb.BroadcastGet;
 import se.sics.kompics.ClassMatchedHandler;
 import se.sics.kompics.ComponentDefinition;
 import se.sics.kompics.Handler;
+import se.sics.kompics.Negative;
 import se.sics.kompics.Positive;
 import se.sics.kompics.Start;
 import se.sics.kompics.config.Conversions;
@@ -35,9 +39,14 @@ public class Node extends ComponentDefinition {
     Positive<Network> net = requires(Network.class);
     Positive<Timer> timer = requires(Timer.class);
     Positive<BebPort> beb = requires(BebPort.class);
+    Positive<StoragePort> storagePort = requires(StoragePort.class);
 
     private long counter = 0;
     private UUID timerId;
+    private int id = 0;
+    private int min = 0;
+    private int max = 0;
+    
     private final TAddress self;
     private TAddress predecessor;
     private TAddress successor;
@@ -52,6 +61,12 @@ public class Node extends ComponentDefinition {
     public Node() {
         this.self = config().getValue("project.self", TAddress.class);
         System.out.println("[Node Address] IP: "+self.toString());
+        this.id = config().getValue("project.self.id", Integer.class);
+        this.min = config().getValue("project.self.min", Integer.class);
+        this.max = config().getValue("project.self.max", Integer.class);
+        
+        
+        
         getAddresses();
         getNeighbours();
     }
@@ -83,6 +98,7 @@ public class Node extends ComponentDefinition {
             spt.setTimeoutEvent(timeout);
             trigger(spt, timer);
             timerId = timeout.getTimeoutId();
+            trigger(new InitStorage(id, min, max, self), storagePort);
         }
     };
     
@@ -111,7 +127,9 @@ public class Node extends ComponentDefinition {
     Handler<PingTimeout> timeoutHandler = new Handler<PingTimeout>() {
         @Override
         public void handle(PingTimeout event) {
-        	trigger(new BroadcastGet(self, replicationAddresses, new GetOperationRequest(1337)), beb);
+        	Random rand = new Random();
+        	int key = rand.nextInt(100-0+1) + 0;
+        	trigger(new BroadcastGet(self, replicationAddresses, new GetOperationRequest(key)), beb);
 //        	for(TAddress addr: replicationAddresses){
 //        		trigger(new TMessage(self, addr, Transport.TCP, new Ping()), net);
 //        	}
@@ -132,7 +150,7 @@ public class Node extends ComponentDefinition {
 
         @Override
         public void handle(GetOperationReply content, TMessage context) {
-        	LOG.info("With my key: "+content.getKey()+" I got: "+content.getValue());
+        	LOG.info("[PORT: "+self.getPort()+"]"+"With my key: "+content.getKey()+" I got: "+content.getValue()+" From: "+context.getSource().getPort());
         }
     };
     
