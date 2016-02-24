@@ -8,8 +8,10 @@ import java.util.UUID;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import Heart.*;
 import ports.BebPort;
 import se.sics.beb.BroadcastGet;
+import se.sics.beb.BroadcastHeartbeat;
 import se.sics.kompics.ClassMatchedHandler;
 import se.sics.kompics.ComponentDefinition;
 import se.sics.kompics.Handler;
@@ -21,6 +23,7 @@ import se.sics.kompics.network.Transport;
 import se.sics.kompics.network.virtual.VirtualNetworkChannel;
 import se.sics.kompics.timer.CancelPeriodicTimeout;
 import se.sics.kompics.timer.SchedulePeriodicTimeout;
+import se.sics.kompics.timer.ScheduleTimeout;
 import se.sics.kompics.timer.Timeout;
 import se.sics.kompics.timer.Timer;
 import se.sics.pingpong.Pinger.PingTimeout;
@@ -79,10 +82,18 @@ public class Node extends ComponentDefinition {
         public void handle(Start event) {
         	long period = config().getValue("project.node.timeout", Long.class);
             SchedulePeriodicTimeout spt = new SchedulePeriodicTimeout(0, period);
+            
             PingTimeout timeout = new PingTimeout(spt);
             spt.setTimeoutEvent(timeout);
             trigger(spt, timer);
             timerId = timeout.getTimeoutId();
+            
+       /*     HeartbeatRequestMessage HRM = new HeartbeatRequestMessage(self,"0");
+            trigger(new TMessage(self, self, Transport.TCP, HRM), timer);
+            ScheduleTimeout st = new ScheduleTimeout(0);
+    		st.setTimeoutEvent(new CheckTimeout(st));
+    		trigger(st, timer);
+        */
         }
     };
     
@@ -112,6 +123,7 @@ public class Node extends ComponentDefinition {
         @Override
         public void handle(PingTimeout event) {
         	trigger(new BroadcastGet(self, replicationAddresses, new GetOperationRequest(1337)), beb);
+        	trigger(new BroadcastHeartbeat(self, replicationAddresses, new HeartbeatRequestMessage()),beb);
 //        	for(TAddress addr: replicationAddresses){
 //        		trigger(new TMessage(self, addr, Transport.TCP, new Ping()), net);
 //        	}

@@ -3,6 +3,7 @@ package se.sics.test;
 import java.util.ArrayList;
 import java.util.LinkedList;
 
+import Heart.Heartbeat;
 import ports.BebPort;
 import se.sics.beb.BEBroadcast;
 import se.sics.kompics.Channel;
@@ -30,13 +31,14 @@ public class NodeParent extends ComponentDefinition{
             Component network = create(NettyNetwork.class, new NettyInit(addr));
             Component storage = create(Storage.class, Init.NONE);
             Component beb = create(BEBroadcast.class, Init.NONE);
-
+            Component heart = create(Heartbeat.class, Init.NONE);
             
             Config.Builder cbuild = config().modify(id());
             cbuild.setValue("project.self", addr);
             Component node = create(Node.class, Init.NONE, cbuild.finalise());
             
             connect(node.getNegative(BebPort.class), beb.getPositive(BebPort.class), Channel.TWO_WAY);
+            connect(heart.getNegative(Network.class), network.getPositive(Network.class), Channel.TWO_WAY);
             connect(storage.getNegative(Network.class), network.getPositive(Network.class), Channel.TWO_WAY);
             connect(beb.getNegative(Network.class), network.getPositive(Network.class), Channel.TWO_WAY);
             connect(node.getNegative(Timer.class), timer.getPositive(Timer.class), Channel.TWO_WAY);

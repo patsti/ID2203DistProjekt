@@ -38,10 +38,23 @@ public class BEBroadcast extends ComponentDefinition{
         	
         }
     };
+    
+    Handler<BroadcastHeartbeat> broadcastHeartbeatHandler = new Handler<BroadcastHeartbeat>() {
+
+        @Override
+        public void handle(BroadcastHeartbeat content) {
+        	for(TAddress addr: content.getReceivers()){
+        		//LOG.info("[BEBroadcast] is sending message from port: "+content.getSource().getPort()+"[ - TO -: ]"+addr.getPort());
+        		trigger(new TMessage(content.getSource(), addr, Transport.TCP, content.getGetHeartbeatRequest()), net);
+        	}
+        	
+        }
+    };
      
     
     {
     	subscribe(broadcastGetHandler, beb);
+    	subscribe(broadcastHeartbeatHandler, beb);
     }
 	
 }
