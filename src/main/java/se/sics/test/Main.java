@@ -28,14 +28,15 @@ public class Main {
     		 Kompics.createAndStart(NodeParent.class, 2);
     		 System.out.println("Starting Node");
     		 // no shutdown this time...act like a server and keep running until externally exited
-	          try {
-	              Thread.sleep(10000);
-	          } catch (InterruptedException ex) {
-	              System.exit(1);
-	          }
-	          Kompics.shutdown();
-	          System.exit(0);
-      
+    		 
+//	          try {
+//	              Thread.sleep(10000);
+//	          } catch (InterruptedException ex) {
+//	              System.exit(1);
+//	          }
+//	          Kompics.shutdown();
+//	          System.exit(0);
+//      
     	/* } else {
 		      System.err.println("Invalid number of parameters");
 		      System.exit(1);

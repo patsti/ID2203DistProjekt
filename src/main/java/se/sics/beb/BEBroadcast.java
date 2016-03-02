@@ -32,19 +32,21 @@ public class BEBroadcast extends ComponentDefinition{
         @Override
         public void handle(BroadcastGet content) {
         	for(TAddress addr: content.getReceivers()){
-        		//LOG.info("[BEBroadcast] is sending message from port: "+content.getSource().getPort()+"[ - TO -: ]"+addr.getPort());
+//        		LOG.info("[BEBroadcast] is sending message from port: "+content.getSource().getPort()+"[ - TO -: ]"+addr.getPort());
         		trigger(new TMessage(content.getSource(), addr, Transport.TCP, content.getGetOperationRequest()), net);
         	}
         	
         }
-    };
+    };//READ-IMPOSE WRITE MAJORITY - kolla upp det!
+    
+
+    
     
     Handler<BroadcastHeartbeat> broadcastHeartbeatHandler = new Handler<BroadcastHeartbeat>() {
 
         @Override
         public void handle(BroadcastHeartbeat content) {
         	for(TAddress addr: content.getReceivers()){
-        		//LOG.info("[BEBroadcast] is sending message from port: "+content.getSource().getPort()+"[ - TO -: ]"+addr.getPort());
         		trigger(new TMessage(content.getSource(), addr, Transport.TCP, content.getGetHeartbeatRequest()), net);
         	}
         	

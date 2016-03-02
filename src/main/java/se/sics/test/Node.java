@@ -9,7 +9,7 @@ import java.util.UUID;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import Heart.*;
+import Heart.HeartbeatRequestMessage;
 import init.InitStorage;
 import ports.BebPort;
 import ports.StoragePort;
@@ -18,19 +18,15 @@ import se.sics.beb.BroadcastHeartbeat;
 import se.sics.kompics.ClassMatchedHandler;
 import se.sics.kompics.ComponentDefinition;
 import se.sics.kompics.Handler;
-import se.sics.kompics.Negative;
 import se.sics.kompics.Positive;
 import se.sics.kompics.Start;
 import se.sics.kompics.config.Conversions;
 import se.sics.kompics.network.Network;
 import se.sics.kompics.network.Transport;
-import se.sics.kompics.network.virtual.VirtualNetworkChannel;
 import se.sics.kompics.timer.CancelPeriodicTimeout;
 import se.sics.kompics.timer.SchedulePeriodicTimeout;
-import se.sics.kompics.timer.ScheduleTimeout;
 import se.sics.kompics.timer.Timeout;
 import se.sics.kompics.timer.Timer;
-import se.sics.pingpong.Pinger.PingTimeout;
 import se.sics.storage.GetOperationReply;
 import se.sics.storage.GetOperationRequest;
 import se.sics.storage.GetOperationRequestFromClient;
@@ -43,6 +39,7 @@ public class Node extends ComponentDefinition {
     Positive<Timer> timer = requires(Timer.class);
     Positive<BebPort> beb = requires(BebPort.class);
     Positive<StoragePort> storagePort = requires(StoragePort.class);
+
 
     private long counter = 0;
     private UUID timerId;
@@ -131,10 +128,10 @@ public class Node extends ComponentDefinition {
     Handler<PingTimeout> timeoutHandler = new Handler<PingTimeout>() {
         @Override
         public void handle(PingTimeout event) {
-        	trigger(new BroadcastHeartbeat(self, replicationAddresses, new HeartbeatRequestMessage()),beb);
+//        	trigger(new BroadcastHeartbeat(self, replicationAddresses, new HeartbeatRequestMessage()),beb);
         	Random rand = new Random();
         	int key = rand.nextInt(100-0+1) + 0;
-        	trigger(new BroadcastGet(self, replicationAddresses, new GetOperationRequest(key)), beb);
+//        	trigger(new BroadcastGet(self, replicationAddresses, new GetOperationRequest(key)), beb);
 //        	for(TAddress addr: replicationAddresses){
 //        		trigger(new TMessage(self, addr, Transport.TCP, new Ping()), net);
 //        	}
@@ -147,17 +144,21 @@ public class Node extends ComponentDefinition {
 
         @Override
         public void handle(GetOperationRequestFromClient content, TMessage context) {
+        	LOG.info("[GetOperationRequestFromClient] From client with port: {} and key: {}",context.getSource().getPort(), content.getKey());
         	//trigger BEB-broadcast with GetOperationRequest-event to all neighbours
+        	
+        	trigger(new BroadcastGet(context.getSource(), addresses, new GetOperationRequest(content.getKey())), beb);
         }
     };
     
-    ClassMatchedHandler<GetOperationReply, TMessage> getReplyHandler = new ClassMatchedHandler<GetOperationReply, TMessage>() {
-
-        @Override
-        public void handle(GetOperationReply content, TMessage context) {
-        	LOG.info("[PORT: "+self.getPort()+"]"+"With my key: "+content.getKey()+" I got: "+content.getValue()+" From: "+context.getSource().getPort());
-        }
-    };
+//    ClassMatchedHandler<GetOperationReply, TMessage> getReplyHandler = new ClassMatchedHandler<GetOperationReply, TMessage>() {
+//
+//        @Override
+//        public void handle(GetOperationReply content, TMessage context) {
+//        	LOG.info("[PORT: "+self.getPort()+"]"+"With my key: "+content.getKey()+" I got: "+content.getValue()+" From: "+context.getSource().getPort());
+//        	trigger(new TMessage(self, context.getSource(), Transport.TCP, content), net);
+//        }
+//    };
     
 
     {
@@ -165,7 +166,8 @@ public class Node extends ComponentDefinition {
         subscribe(timeoutHandler, timer);
         subscribe(pingHandler, net);
         subscribe(getOperationHandler, net);
-        subscribe(getReplyHandler, net);
+//        subscribe(getReplyHandler, net);
+        
     }
 
     @Override

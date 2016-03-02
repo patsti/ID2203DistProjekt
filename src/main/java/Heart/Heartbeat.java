@@ -37,7 +37,7 @@ import se.sics.test.TMessage;
 
 public class Heartbeat extends ComponentDefinition {
 	
-	private static final Logger LOG = LoggerFactory.getLogger(Storage.class);
+	private static final Logger LOG = LoggerFactory.getLogger(Heartbeat.class);
 	private HashMap<Integer, String> storage = new HashMap<>();
 	private HashMap<Integer, String> replica1 = new HashMap<>();
 	private HashMap<Integer, String> replica2 = new HashMap<>();

@@ -1,6 +1,5 @@
 package se.sics.storage;
 
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Random;
 
@@ -17,12 +16,8 @@ import se.sics.kompics.Positive;
 import se.sics.kompics.Start;
 import se.sics.kompics.network.Network;
 import se.sics.kompics.network.Transport;
-import se.sics.kompics.timer.SchedulePeriodicTimeout;
-import se.sics.test.Node;
-import se.sics.test.Pong;
 import se.sics.test.TAddress;
 import se.sics.test.TMessage;
-import se.sics.test.Node.PingTimeout;
 
 public class Storage extends ComponentDefinition {
 	
@@ -58,9 +53,9 @@ public class Storage extends ComponentDefinition {
     		max = event.getMax();
     		self = event.getSelf();
     		
-            for(int i = 0; i < 5; i++){
+            for(int i = 0; i < 25; i++){
             	Random rand = new Random();
-            	LOG.info("Inside of me!");
+//            	LOG.info("Inside of me!");
             	int key = rand.nextInt(max-min+1)+min;
             	storage.put(key, "Ain't no holla back girl");
             }

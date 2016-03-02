@@ -48,6 +48,7 @@ public class NodeParent extends ComponentDefinition{
             Component beb = create(BEBroadcast.class, Init.NONE);
             Component heart = create(Heartbeat.class, Init.NONE);
             
+            
             connect(node.getNegative(BebPort.class), beb.getPositive(BebPort.class), Channel.TWO_WAY);
             connect(heart.getNegative(Network.class), network.getPositive(Network.class), Channel.TWO_WAY);
             connect(storage.getNegative(Network.class), network.getPositive(Network.class), Channel.TWO_WAY);
@@ -55,6 +56,7 @@ public class NodeParent extends ComponentDefinition{
             connect(node.getNegative(Timer.class), timer.getPositive(Timer.class), Channel.TWO_WAY);
             connect(node.getNegative(Network.class), network.getPositive(Network.class), Channel.TWO_WAY);
             connect(node.getNegative(StoragePort.class), storage.getPositive(StoragePort.class), Channel.TWO_WAY);
+
         }
     }
     
