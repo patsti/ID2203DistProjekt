@@ -73,13 +73,30 @@ public class Storage extends ComponentDefinition {
         	}else{
         		String value = storage.get(key);
         		LOG.info("[GetOperation] From: {} key: {} value: {} - Sending it back to: {}",self.getPort() ,key, value, context.getSource().getPort());
-        		trigger(new TMessage(self, context.getSource(), Transport.TCP, new GetOperationReply(key, value)), net);
+        		trigger(new TMessage(context.getSource(), context.getSource(), Transport.TCP, new GetOperationReply(key, value)), net);
         	}
         }
-    };	
+    };
+    
+    ClassMatchedHandler<PutOperationRequest, TMessage> putOperationRequestHandler = new ClassMatchedHandler<PutOperationRequest, TMessage>() {
+
+        @Override
+        public void handle(PutOperationRequest content, TMessage context) {
+        	int key = content.getKey();
+        	String value = content.getValue();
+        	if(!storage.containsKey(key)){
+        		LOG.info("[PutOperation] key: {} isn't in my range: My address is: {}",key, self.getPort());
+        		if(key <= max && key >= min ){
+            		LOG.info("[PutOperation] From: {} key: {} storing value: {}",self.getPort() ,key, value);
+            		storage.put(key, value);
+            	}
+        	}
+        }
+    };
     
     {
     	subscribe(getOperationRequestHandler, net);
+    	subscribe(putOperationRequestHandler, net);
     	subscribe(initHandler, storagePort);
     }
       

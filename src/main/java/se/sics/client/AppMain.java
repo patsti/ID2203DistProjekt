@@ -18,6 +18,7 @@ import se.sics.kompics.network.Network;
 import se.sics.kompics.network.netty.NettyInit;
 import se.sics.kompics.network.netty.NettyNetwork;
 import se.sics.kompics.network.netty.serialization.Serializers;
+import se.sics.kompics.network.virtual.VirtualNetworkChannel;
 import se.sics.kompics.timer.java.JavaTimer;
 import se.sics.test.NetSerializer;
 import se.sics.test.Ping;
@@ -69,10 +70,11 @@ public class AppMain extends ComponentDefinition {
 		Component network = create(NettyNetwork.class, new NettyInit(self));
 		Component app = create(Application.class, new ApplicationInit(self, addresses, commandScript));
 		
-        
-        connect(app.getNegative(Network.class), network.getPositive(Network.class), Channel.TWO_WAY);
+		connect(app.getNegative(Network.class), network.getPositive(Network.class), Channel.TWO_WAY);           
 		
-		connect(app.required(Console.class), con.provided(Console.class));
+//		connect(app.required(Console.class), con.provided(Console.class));
+		
+		connect(app.getNegative(Console.class), con.getPositive(Console.class), Channel.TWO_WAY);
 
 	}
 	

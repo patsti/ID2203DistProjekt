@@ -15,6 +15,7 @@ import ports.BebPort;
 import ports.StoragePort;
 import se.sics.beb.BroadcastGet;
 import se.sics.beb.BroadcastHeartbeat;
+import se.sics.beb.BroadcastPut;
 import se.sics.kompics.ClassMatchedHandler;
 import se.sics.kompics.ComponentDefinition;
 import se.sics.kompics.Handler;
@@ -30,6 +31,8 @@ import se.sics.kompics.timer.Timer;
 import se.sics.storage.GetOperationReply;
 import se.sics.storage.GetOperationRequest;
 import se.sics.storage.GetOperationRequestFromClient;
+import se.sics.storage.PutOperationRequest;
+import se.sics.storage.PutOperationRequestFromClient;
 
 public class Node extends ComponentDefinition {
 	
@@ -64,8 +67,6 @@ public class Node extends ComponentDefinition {
         this.id = config().getValue("project.self.id", Integer.class);
         this.min = config().getValue("project.self.min", Integer.class);
         this.max = config().getValue("project.self.max", Integer.class);
-        
-        
         
         getAddresses();
         getNeighbours();
@@ -151,14 +152,24 @@ public class Node extends ComponentDefinition {
         }
     };
     
-//    ClassMatchedHandler<GetOperationReply, TMessage> getReplyHandler = new ClassMatchedHandler<GetOperationReply, TMessage>() {
-//
-//        @Override
-//        public void handle(GetOperationReply content, TMessage context) {
+    ClassMatchedHandler<GetOperationReply, TMessage> getReplyHandler = new ClassMatchedHandler<GetOperationReply, TMessage>() {
+
+        @Override
+        public void handle(GetOperationReply content, TMessage context) {
 //        	LOG.info("[PORT: "+self.getPort()+"]"+"With my key: "+content.getKey()+" I got: "+content.getValue()+" From: "+context.getSource().getPort());
-//        	trigger(new TMessage(self, context.getSource(), Transport.TCP, content), net);
-//        }
-//    };
+        	trigger(new TMessage(self, context.getSource(), Transport.TCP, content), net);
+        }
+    };
+    
+    
+    ClassMatchedHandler<PutOperationRequestFromClient, TMessage> putOperationHandler = new ClassMatchedHandler<PutOperationRequestFromClient, TMessage>() {
+
+        @Override
+        public void handle(PutOperationRequestFromClient content, TMessage context) {
+        	LOG.info("[GetOperationRequestFromClient] From client with port: {} and key: {}",context.getSource().getPort(), content.getKey());
+        	trigger(new BroadcastPut(context.getSource(), addresses, new PutOperationRequest(content.getKey(), content.getValue())), beb);
+        }
+    };
     
 
     {
@@ -166,7 +177,8 @@ public class Node extends ComponentDefinition {
         subscribe(timeoutHandler, timer);
         subscribe(pingHandler, net);
         subscribe(getOperationHandler, net);
-//        subscribe(getReplyHandler, net);
+        subscribe(putOperationHandler, net);
+        subscribe(getReplyHandler, net);
         
     }
 

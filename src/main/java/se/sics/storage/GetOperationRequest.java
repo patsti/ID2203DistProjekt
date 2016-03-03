@@ -3,6 +3,7 @@ package se.sics.storage;
 import java.io.Serializable;
 
 import se.sics.kompics.KompicsEvent;
+import se.sics.test.TAddress;
 
 public class GetOperationRequest implements KompicsEvent, Serializable {
 	
@@ -14,6 +15,7 @@ public class GetOperationRequest implements KompicsEvent, Serializable {
 	
 	public GetOperationRequest(int key){
 		this.key = key;
+
 	}
 
 	public int getKey() {
@@ -22,8 +24,5 @@ public class GetOperationRequest implements KompicsEvent, Serializable {
 
 	public void setKey(int key) {
 		this.key = key;
-	};
-	
-	
-
+	}
 }

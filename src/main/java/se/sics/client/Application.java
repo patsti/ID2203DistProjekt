@@ -20,6 +20,8 @@ import se.sics.kompics.timer.ScheduleTimeout;
 import se.sics.kompics.timer.Timer;
 import se.sics.storage.GetOperationReply;
 import se.sics.storage.GetOperationRequestFromClient;
+import se.sics.storage.PutOperationRequest;
+import se.sics.storage.PutOperationRequestFromClient;
 import se.sics.test.TAddress;
 import se.sics.test.TMessage;
 
@@ -86,8 +88,11 @@ public final class Application extends ComponentDefinition {
 	private void doCommand(String cmd) {
 		
 		if (cmd.startsWith("G")) {
-			doPerfect(cmd.substring(3));
+			doGET(cmd.substring(3));
 		} 
+		else if(cmd.startsWith("P")){
+			doPUT(cmd.substring(3));
+		}
 		else if (cmd.startsWith("S")) {
 			doSleep(Integer.parseInt(cmd.substring(1)));
 		} else if (cmd.startsWith("X")) {
@@ -109,14 +114,14 @@ public final class Application extends ComponentDefinition {
 		LOG.info("X: terminates this process");
 	}
 	
-    private final void doPerfect(String key) {
+    private final void doGET(String key) {
     	
     	int keyStart = key.indexOf("<");
     	int keyEnd = key.indexOf(">");
     	key = key.substring(keyStart+1, keyEnd);
     	System.out.println("[KEY] "+ key);
     	
-    	TAddress node = nodes.get(1);
+    	TAddress node = nodes.get(2);
 		LOG.info("Sending GET<key> {} to Port {}", key, node.getPort());
 		trigger(new TMessage(self, node, Transport.TCP, new GetOperationRequestFromClient(Integer.parseInt(key)) ), net);
     	
@@ -126,6 +131,21 @@ public final class Application extends ComponentDefinition {
 //			trigger(new TMessage(self, node, Transport.TCP, new GetOperationRequestFromClient(Integer.parseInt(key)) ), net);
 //		}
 	}
+    
+    private final void doPUT(String cmd){
+    	int keyStart = cmd.indexOf("<");
+    	int keyEnd = cmd.indexOf(",");
+    	int valueStart = cmd.indexOf(",")+1;
+    	int valueEnd = cmd.indexOf(">");
+    	
+    	String key = cmd.substring(keyStart+1, keyEnd);
+    	String value = cmd.substring(valueStart, valueEnd);
+    	
+    	LOG.info("Key: "+key+" Value: "+value);
+    	TAddress node = nodes.get(2);
+		LOG.info("Sending GET<key> {} to Port {}", key, node.getPort());
+		trigger(new TMessage(self, node, Transport.TCP, new PutOperationRequestFromClient(Integer.parseInt(key), value)), net);
+    }
     
     
     ClassMatchedHandler<GetOperationReply, TMessage> getReplyHandler = new ClassMatchedHandler<GetOperationReply, TMessage>() {
