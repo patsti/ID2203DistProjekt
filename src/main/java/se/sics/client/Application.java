@@ -143,7 +143,7 @@ public final class Application extends ComponentDefinition {
     	
     	LOG.info("Key: "+key+" Value: "+value);
     	TAddress node = nodes.get(2);
-		LOG.info("Sending GET<key> {} to Port {}", key, node.getPort());
+		LOG.info("Sending PUT<key,value> key: {}, value: {} to Port {}", key, value, node.getPort());
 		trigger(new TMessage(self, node, Transport.TCP, new PutOperationRequestFromClient(Integer.parseInt(key), value)), net);
     }
     
@@ -152,7 +152,7 @@ public final class Application extends ComponentDefinition {
 
         @Override
         public void handle(GetOperationReply content, TMessage context) {
-        	LOG.info("[PORT: "+self.getPort()+"]"+"With my key: "+content.getKey()+" I got: "+content.getValue()+" From: "+context.getSource().getPort());
+        	LOG.info("[PORT: "+self.getPort()+"]"+"With my key: "+content.getKey()+" I got: "+content.getValue());
         }
     };
 
