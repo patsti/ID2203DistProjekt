@@ -3,11 +3,19 @@ package se.sics.test;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedList;
+import java.util.Random;
 import java.util.UUID;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import Heart.HeartbeatRequestMessage;
+import init.InitStorage;
+import ports.BebPort;
+import ports.StoragePort;
+import se.sics.beb.BroadcastGet;
+import se.sics.beb.BroadcastHeartbeat;
+import se.sics.beb.BroadcastPut;
 import se.sics.kompics.ClassMatchedHandler;
 import se.sics.kompics.ComponentDefinition;
 import se.sics.kompics.Handler;
@@ -16,34 +24,50 @@ import se.sics.kompics.Start;
 import se.sics.kompics.config.Conversions;
 import se.sics.kompics.network.Network;
 import se.sics.kompics.network.Transport;
-import se.sics.kompics.network.virtual.VirtualNetworkChannel;
 import se.sics.kompics.timer.CancelPeriodicTimeout;
 import se.sics.kompics.timer.SchedulePeriodicTimeout;
 import se.sics.kompics.timer.Timeout;
 import se.sics.kompics.timer.Timer;
-import se.sics.test.Pinger.PingTimeout;
+import se.sics.storage.GetOperationReply;
+import se.sics.storage.GetOperationRequest;
+import se.sics.storage.GetOperationRequestFromClient;
+import se.sics.storage.PutOperationRequest;
+import se.sics.storage.PutOperationRequestFromClient;
 
 public class Node extends ComponentDefinition {
 	
-    private static final Logger LOG = LoggerFactory.getLogger(Pinger.class);
+    private static final Logger LOG = LoggerFactory.getLogger(Node.class);
 	
     Positive<Network> net = requires(Network.class);
     Positive<Timer> timer = requires(Timer.class);
+    Positive<BebPort> beb = requires(BebPort.class);
+    Positive<StoragePort> storagePort = requires(StoragePort.class);
+
 
     private long counter = 0;
     private UUID timerId;
+    private int id = 0;
+    private int min = 0;
+    private int max = 0;
+    
     private final TAddress self;
     private TAddress predecessor;
     private TAddress successor;
+	private HashMap<Integer, String> storage = new HashMap<>();
+	private HashMap<Integer, String> replica = new HashMap<>();
 
     private ArrayList<TAddress> addresses = new ArrayList<>();
     private ArrayList<TAddress> replicationAddresses = new ArrayList<>();
     
-    private HashMap<Integer, ArrayList<Integer>> storage = new HashMap<>();
+   
 
     public Node() {
         this.self = config().getValue("project.self", TAddress.class);
         System.out.println("[Node Address] IP: "+self.toString());
+        this.id = config().getValue("project.self.id", Integer.class);
+        this.min = config().getValue("project.self.min", Integer.class);
+        this.max = config().getValue("project.self.max", Integer.class);
+        
         getAddresses();
         getNeighbours();
     }
@@ -71,10 +95,12 @@ public class Node extends ComponentDefinition {
         public void handle(Start event) {
         	long period = config().getValue("project.node.timeout", Long.class);
             SchedulePeriodicTimeout spt = new SchedulePeriodicTimeout(0, period);
+            
             PingTimeout timeout = new PingTimeout(spt);
             spt.setTimeoutEvent(timeout);
             trigger(spt, timer);
             timerId = timeout.getTimeoutId();
+            trigger(new InitStorage(id, min, max, self), storagePort);
         }
     };
     
@@ -84,7 +110,7 @@ public class Node extends ComponentDefinition {
         @Override
         public void handle(Pong content, TMessage context) {
             counter++;
-//            LOG.info("Got Pong #{}!", counter);
+
             if(!self.equals(context.getSource()))
             	LOG.info("["+self.toString()+"]"+" Got Pong #{}!"+" from ["+context.getSource().toString()+"]", counter);
         }
@@ -94,7 +120,6 @@ public class Node extends ComponentDefinition {
         @Override
         public void handle(Ping content, TMessage context) {
             counter++;
-//            LOG.info("Got Ping #{}!", counter);
             LOG.info("["+self.toString()+"]"+" Got a Ping #{}!"+" from ["+context.getSource().toString()+"]", counter);
             trigger(new TMessage(self, context.getSource(), Transport.TCP, new Pong()), net);
         }
@@ -104,17 +129,57 @@ public class Node extends ComponentDefinition {
     Handler<PingTimeout> timeoutHandler = new Handler<PingTimeout>() {
         @Override
         public void handle(PingTimeout event) {
-        	for(TAddress addr: replicationAddresses){
-        		trigger(new TMessage(self, addr, Transport.TCP, new Ping()), net);
-        	}
+//        	trigger(new BroadcastHeartbeat(self, replicationAddresses, new HeartbeatRequestMessage()),beb);
+        	Random rand = new Random();
+        	int key = rand.nextInt(100-0+1) + 0;
+//        	trigger(new BroadcastGet(self, replicationAddresses, new GetOperationRequest(key)), beb);
+//        	for(TAddress addr: replicationAddresses){
+//        		trigger(new TMessage(self, addr, Transport.TCP, new Ping()), net);
+//        	}
         }
     };
+    
+    
+    
+    ClassMatchedHandler<GetOperationRequestFromClient, TMessage> getOperationHandler = new ClassMatchedHandler<GetOperationRequestFromClient, TMessage>() {
+
+        @Override
+        public void handle(GetOperationRequestFromClient content, TMessage context) {
+        	LOG.info("[GetOperationRequestFromClient] From client with port: {} and key: {}",context.getSource().getPort(), content.getKey());
+        	//trigger BEB-broadcast with GetOperationRequest-event to all neighbours
+        	
+        	trigger(new BroadcastGet(context.getSource(), addresses, new GetOperationRequest(content.getKey())), beb);
+        }
+    };
+    
+    ClassMatchedHandler<GetOperationReply, TMessage> getReplyHandler = new ClassMatchedHandler<GetOperationReply, TMessage>() {
+
+        @Override
+        public void handle(GetOperationReply content, TMessage context) {
+//        	LOG.info("[PORT: "+self.getPort()+"]"+"With my key: "+content.getKey()+" I got: "+content.getValue()+" From: "+context.getSource().getPort());
+        	trigger(new TMessage(self, context.getSource(), Transport.TCP, content), net);
+        }
+    };
+    
+    
+    ClassMatchedHandler<PutOperationRequestFromClient, TMessage> putOperationHandler = new ClassMatchedHandler<PutOperationRequestFromClient, TMessage>() {
+
+        @Override
+        public void handle(PutOperationRequestFromClient content, TMessage context) {
+        	LOG.info("[GetOperationRequestFromClient] From client with port: {} and key: {}",context.getSource().getPort(), content.getKey());
+        	trigger(new BroadcastPut(context.getSource(), addresses, new PutOperationRequest(content.getKey(), content.getValue())), beb);
+        }
+    };
+    
 
     {
         subscribe(startHandler, control);
-        subscribe(pongHandler, net);
         subscribe(timeoutHandler, timer);
         subscribe(pingHandler, net);
+        subscribe(getOperationHandler, net);
+        subscribe(putOperationHandler, net);
+        subscribe(getReplyHandler, net);
+        
     }
 
     @Override
