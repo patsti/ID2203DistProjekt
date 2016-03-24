@@ -55,6 +55,8 @@ public class Heartbeat extends ComponentDefinition {
         public void handle(HeartbeatInitMessage event) {
         	String sName1 = String.valueOf(self.getPort())+String.valueOf(alive.get(0).getPort());
         	String sName2 = String.valueOf(self.getPort())+String.valueOf(alive.get(1).getPort());
+        	LOG.info("init heartbeat from #{}",self.getPort());
+
         	if((int)timeMaster.get(sName1) != event.id){
         		LOG.info("Suspecting #{}Time is #{}, eventID is #{}", sName1, timeMaster.get(sName1), event.id);
         		suspected.add(new Suspect(alive.get(0)));
@@ -72,6 +74,7 @@ public class Heartbeat extends ComponentDefinition {
         			}
         		}
         		if(!found){
+        			LOG.info("#{} is not Suspected!", sName2);
         			sendTo.add(addr);
         		}
         	}
@@ -88,6 +91,8 @@ public class Heartbeat extends ComponentDefinition {
         public void handle(HeartbeatRequestMessage content, TMessage context) {
         	String sName = String.valueOf(self.getPort())+String.valueOf(context.getSource().getPort());
     		//int iName = Integer.valueOf(sName);	
+        	LOG.info("got heartbeat #{}, time is #{} and id is {}", sName, timeMaster.get(sName), content.getID());
+
         if(suspected.contains(context.getSource())){
         		//suspected.remove(context.getSource());
         		LOG.info("removes #{} from suspect, time is #{} and id is {}", context.getSource(), timeMaster.get(sName), content.getID());
