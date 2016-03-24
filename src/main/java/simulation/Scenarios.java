@@ -102,9 +102,10 @@ public class Scenarios extends SystemEvent{
                     //nested constructor ;o
                     {
                         eventInterArrivalTime(constant(1000));
-                        raise(1, Operations.startNode, new BasicIntSequentialDistribution(2002), new BasicIntSequentialDistribution(20));
+                        raise(1, Operations.startNode, new BasicIntSequentialDistribution(2002), new BasicIntSequentialDistribution(40));
                     }
                 };
+                
                 
                 SimulationScenario.StochasticProcess node3 = new SimulationScenario.StochasticProcess(){
                     //nested constructor ;o
@@ -143,7 +144,7 @@ public class Scenarios extends SystemEvent{
                     //nested constructor ;o
                     {
                         eventInterArrivalTime(constant(1000));
-                        raise(1, Operations.killNode, new BasicIntSequentialDistribution(2001));
+                        raise(1, Operations.killNode, new BasicIntSequentialDistribution(2002));
                     }
                 };
 
@@ -153,12 +154,12 @@ public class Scenarios extends SystemEvent{
                 node4.startAfterStartOf(1000, node3);
                 node5.startAfterStartOf(1000, node4);
                 client.startAfterStartOf(1000, node5);
-                killMe.startAfterStartOf(4000, node1);
+                killMe.startAfterStartOf(10000, node2);
                 
                 
                 
 //                node.startAfterStartOf(1000, bootstrapper); //then start the nodes
-                terminateAt(15000);
+                terminateAt(20000);
             }
         };
     }

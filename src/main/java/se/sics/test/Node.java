@@ -103,7 +103,7 @@ public class Node extends ComponentDefinition{
             
             PingTimeout timeout = new PingTimeout(spt);
             spt.setTimeoutEvent(timeout);
-            trigger(new InitHeartbeat(self, replicationAddresses,1), heartbeatPort);
+            trigger(new InitHeartbeat(self, replicationAddresses,0), heartbeatPort);
             trigger(spt, timer);
             timerId = timeout.getTimeoutId();
             trigger(new InitStorage(id, min, max, self), storagePort);

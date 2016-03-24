@@ -58,9 +58,6 @@ public class BEBroadcast extends ComponentDefinition{
         }
     };
     
-
-    
-    
     Handler<BroadcastHeartbeat> broadcastHeartbeatHandler = new Handler<BroadcastHeartbeat>() {
 
         @Override

@@ -34,7 +34,7 @@ public class SimulationMain extends ComponentDefinition {
 
 
     public static void main(String[] args){
-    //    SimulationScenario startup = Scenarios.simpleStartUp();
+    //	SimulationScenario startup = Scenarios.simpleStartUp();
     //    startup.simulate(LauncherComp.class);
         SimulationScenario simulationOfDeath = Scenarios.simulateNodeCrash();
         simulationOfDeath.simulate(LauncherComp.class);

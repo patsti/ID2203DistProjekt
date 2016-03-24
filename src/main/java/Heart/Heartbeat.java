@@ -24,9 +24,9 @@ public class Heartbeat extends ComponentDefinition {
 	
 	private static final Logger LOG = LoggerFactory.getLogger(Heartbeat.class);
 	private ArrayList<TAddress> alive = new ArrayList<>();
+	private ArrayList<TAddress> neighbours = new ArrayList<>();
 	private ArrayList<Suspect> suspected = new ArrayList<>();
 	private int id;
-	private int currentTime = 0;
 	private TAddress self;
 	private HashMap<String, Integer> timeMaster = new HashMap<>();
 	
@@ -45,6 +45,8 @@ public class Heartbeat extends ComponentDefinition {
     		self = event.self;
     		timeMaster = event.timeMaster;
     		alive = event.alive;
+    		neighbours.add(alive.get(0));
+    		neighbours.add(alive.get(1));
     	}
     };
     
@@ -73,11 +75,12 @@ public class Heartbeat extends ComponentDefinition {
         			}
         		}
         		if(!found){
-        			LOG.info("#{} is not Suspected!", sName2);
+        			LOG.info("Not suspecting #{}{} Time is #{}, eventID is #{}", self.getPort(), addr.getPort(), timeMaster.get(sName2), event.id);
         			sendTo.add(addr);
         		}
         	}
-        	trigger(new BroadcastHeartbeat(self, sendTo, new HeartbeatRequestMessage(event.id)),beb);
+        	
+        	trigger(new BroadcastHeartbeat(self, alive, new HeartbeatRequestMessage(event.id)),beb);
 
         	/* Add Suspection if id> timeMaster */
         }
@@ -90,8 +93,6 @@ public class Heartbeat extends ComponentDefinition {
         public void handle(HeartbeatRequestMessage content, TMessage context) {
         	String sName = String.valueOf(self.getPort())+String.valueOf(context.getSource().getPort());
     		//int iName = Integer.valueOf(sName);	
-        	LOG.info("got heartbeat #{}, time is #{} and id is {}", sName, timeMaster.get(sName), content.getID());
-
         if(suspected.contains(context.getSource())){
         		//suspected.remove(context.getSource());
         		LOG.info("removes #{} from suspect, time is #{} and id is {}", context.getSource(), timeMaster.get(sName), content.getID());
@@ -112,14 +113,21 @@ public class Heartbeat extends ComponentDefinition {
     		String p2 = sName.substring(4, 8);
     		sName = p2+p1;
         	if(timeMaster.containsKey(sName)){
-        		timeMaster.replace(sName, timeMaster.get(sName)+1);
+        		if(timeMaster.get(sName)==0){
+        			timeMaster.replace(sName, content.id+1);
+        		}else{
+        			timeMaster.replace(sName, timeMaster.get(sName)+1);
+        		}
         	}
-        	if(suspected.contains(context.getSource())){
-        		LOG.info("Removed #{} from suspected!!", context.getSource());
-        		suspected.remove(context.getSource());
+        	for(Suspect s : suspected){
+        		if(s.getSource().getPort() == Integer.valueOf(p2)){
+        			LOG.info("Removed #{} from suspected!!", context.getSource());
+            		suspected.remove(s);
+        			timeMaster.replace(sName, content.id+1);
+        		}
         	}
-        	currentTime++;
-        	LOG.info("Time for {} increased to #{}", sName,timeMaster.get(sName));
+        
+        	LOG.info("#{} increased curr time to {}!!", sName, timeMaster.get(sName));
         	//trigger(new TMessage(context.getSource(), context.getSource(), Transport.TCP, new HeartNodeMessage(sName,timeMaster.get(sName))), heartPort);
         }
     };	
