@@ -1,11 +1,12 @@
 package se.sics.beb;
 
+import java.util.ArrayList;
+
 import org.apache.log4j.PropertyConfigurator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import ports.BebPort;
-import riwcm.ReadBebDataMessage;
 import se.sics.kompics.ClassMatchedHandler;
 import se.sics.kompics.ComponentDefinition;
 import se.sics.kompics.Handler;
@@ -15,10 +16,12 @@ import se.sics.kompics.config.Conversions;
 import se.sics.kompics.network.Network;
 import se.sics.kompics.network.Transport;
 import se.sics.kompics.network.netty.serialization.Serializers;
+import se.sics.riwcm.ReadBebDataMessage;
 import se.sics.storage.GetOperationRequest;
 import se.sics.storage.RIWCMGetOperationRequest;
 import se.sics.test.NetSerializer;
 import se.sics.test.Node;
+import se.sics.test.NodeParent;
 import se.sics.test.Pong;
 import se.sics.test.TAddress;
 import se.sics.test.TAddressConverter;
@@ -32,7 +35,13 @@ public class BEBroadcast extends ComponentDefinition{
 	
 	private static final Logger LOG = LoggerFactory.getLogger(Node.class);
 	
-	public BEBroadcast(){}
+	private ArrayList<TAddress> replicationGroup = new ArrayList<TAddress>();
+	private TAddress self;
+	
+	public BEBroadcast(Init init){
+		replicationGroup = init.receivers;
+		self = init.self;
+	}
 	
 	
     Handler<BroadcastGet> broadcastGetHandler = new Handler<BroadcastGet>() {
@@ -81,25 +90,39 @@ public class BEBroadcast extends ComponentDefinition{
 //        Serializers.register(new NetSerializer(), "netS");
 //	}
 	
-    Handler<BroadcastReadRiwcm> riwcmReadHandler = new Handler<BroadcastReadRiwcm>() {
-
-        @Override
-        public void handle(BroadcastReadRiwcm content) {
-        
-        	
-        	LOG.info("\t\t[BroadcastReadRiwcm] ");
-        	
-        	ReadBebDataMessage rbdm = content.getReadBebDataMessage();
-        	
-        	LOG.info("\t\t[BroadcastReadRiwcm DESTINATION] "+content.getReadBebDataMessage().getSource());
-        	TAddress source = rbdm.getSource();
-        	
-        	for(TAddress addr: content.getReadBebDataMessage().getReceivers()){
-        		trigger(new TMessage(source, addr, Transport.TCP, rbdm), network);
-        	}
-        	//Trigger to himself, very NOT neat davai
-        	trigger(new TMessage(source, source, Transport.TCP, rbdm), network);
-        }
+//    Handler<BroadcastReadRiwcm> riwcmReadHandler = new Handler<BroadcastReadRiwcm>() {
+//
+//        @Override
+//        public void handle(BroadcastReadRiwcm content) {
+//        
+//        	
+//        	LOG.info("\t\t[BroadcastReadRiwcm] ");
+//        	
+//        	ReadBebDataMessage rbdm = content.getReadBebDataMessage();
+//        	
+//        	LOG.info("\t\t[BroadcastReadRiwcm DESTINATION] "+content.getReadBebDataMessage().getSource());
+//        	TAddress source = rbdm.getSource();
+//        	
+//        	for(TAddress addr: content.getReadBebDataMessage().getReceivers()){
+//        		trigger(new TMessage(source, addr, Transport.TCP, rbdm), network);
+//        	}
+//        	//Trigger to himself, very NOT neat davai
+//        	trigger(new TMessage(source, source, Transport.TCP, rbdm), network);
+//        }
+//    };
+    
+    Handler<ReadBebDataMessage> readBebDataMessage = new Handler<ReadBebDataMessage>(){
+    	@Override
+    	public void handle(ReadBebDataMessage content){
+    		
+    		LOG.info("\t\t[Broadcasting readBebDataMessage] ");
+    		for(TAddress addr: replicationGroup){
+    			LOG.info("\t\t[ADDRESS] "+addr.toString());
+    			trigger(new TMessage(self, addr, Transport.TCP, content), network);
+    		}
+    		LOG.info("\t\t[ADDRESS SELF] "+self.toString());
+    		trigger(new TMessage(self, self, Transport.TCP, content), network);
+    	}
     };
 	
 
@@ -117,6 +140,8 @@ public class BEBroadcast extends ComponentDefinition{
         	
         }
     };
+    
+    
   
      
     
@@ -125,9 +150,21 @@ public class BEBroadcast extends ComponentDefinition{
     	subscribe(broadcastHeartbeatHandler, beb);
     	subscribe(broadcastPutHandler, beb);
     	subscribe(riwcmWriteHandler, beb);
-    	subscribe(riwcmReadHandler, beb);
+//    	subscribe(riwcmReadHandler, beb);
+    	subscribe(readBebDataMessage, beb);
     	
     	Conversions.register(new TAddressConverter());
+    }
+    
+    public static class Init extends se.sics.kompics.Init<BEBroadcast>{
+    	
+    	private TAddress self;
+    	private ArrayList<TAddress> receivers = new ArrayList<TAddress>();
+    	
+    	public Init(TAddress self, ArrayList<TAddress> receivers){
+    		this.self = self;
+    		this.receivers = receivers;
+    	}
     }
 	
 }

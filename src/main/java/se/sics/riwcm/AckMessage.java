@@ -1,4 +1,4 @@
-package riwcm;
+package se.sics.riwcm;
 
 import java.io.Serializable;
 

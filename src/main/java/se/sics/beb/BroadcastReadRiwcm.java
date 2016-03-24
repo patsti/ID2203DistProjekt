@@ -2,8 +2,8 @@ package se.sics.beb;
 
 import java.io.Serializable;
 
-import riwcm.ReadBebDataMessage;
 import se.sics.kompics.KompicsEvent;
+import se.sics.riwcm.ReadBebDataMessage;
 
 public class BroadcastReadRiwcm implements KompicsEvent, Serializable{
 	

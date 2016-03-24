@@ -9,8 +9,6 @@ import Heart.Heartbeat;
 import ports.BebPort;
 import ports.RIWCMport;
 import ports.StoragePort;
-import riwcm.ReadImposeWriteConsultMajority;
-import riwcm.ReadImposeWriteConsultMajorityInit;
 import se.sics.beb.BEBroadcast;
 import se.sics.kompics.Channel;
 import se.sics.kompics.Component;
@@ -20,6 +18,8 @@ import se.sics.kompics.config.Config;
 import se.sics.kompics.config.Conversions;
 import se.sics.kompics.network.Network;
 import se.sics.kompics.timer.Timer;
+import se.sics.riwcm.ReadImposeWriteConsultMajority;
+import se.sics.riwcm.ReadImposeWriteConsultMajorityInit;
 import se.sics.storage.Storage;
 
 public class NodeParent extends ComponentDefinition{
@@ -54,7 +54,7 @@ public class NodeParent extends ComponentDefinition{
         
         //BACKUP
         Component storage = create(Storage.class, Init.NONE);
-        Component beb = create(BEBroadcast.class, Init.NONE);
+        Component beb = create(BEBroadcast.class, new BEBroadcast.Init(self, addresses));
         Component heart = create(Heartbeat.class, Init.NONE);
         Component riwcm = create(ReadImposeWriteConsultMajority.class, new ReadImposeWriteConsultMajorityInit(self, id, addresses));
         

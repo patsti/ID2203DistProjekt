@@ -1,4 +1,4 @@
-package riwcm;
+package se.sics.riwcm;
 
 import se.sics.kompics.KompicsEvent;
 import se.sics.test.TAddress;

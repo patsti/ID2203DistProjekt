@@ -6,6 +6,8 @@ import se.sics.beb.BroadcastWriteRiwcm;
 import se.sics.beb.BroadcastHeartbeat;
 import se.sics.beb.BroadcastPut;
 import se.sics.kompics.PortType;
+import se.sics.riwcm.ReadBebDataMessage;
+import se.sics.riwcm.WriteBebDataMessage;
 
 public class BebPort extends PortType{
 	{
@@ -18,7 +20,15 @@ public class BebPort extends PortType{
 		request(BroadcastWriteRiwcm.class);
 		indication(BroadcastWriteRiwcm.class);
 		indication(BroadcastReadRiwcm.class);
+		
+		
+		request(ReadBebDataMessage.class);
+		indication(ReadBebDataMessage.class);
 	
+		request(WriteBebDataMessage.class);
+		indication(WriteBebDataMessage.class);
+		
+		
 //		request(BroadcastPutRiwcm.class);
 	}	
 }

@@ -1,4 +1,4 @@
-package riwcm;
+package se.sics.riwcm;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -45,7 +45,6 @@ public class ReadImposeWriteConsultMajority extends ComponentDefinition {
 	private Integer ts;
 	private Boolean reading;
 	private WriteBebDataMessage wBebMsg;
-	private ReadBebDataMessage readBebDataMessage;
 	private Integer rr;
 	private Integer maxts;
 	private Integer selfId;
@@ -106,9 +105,10 @@ public class ReadImposeWriteConsultMajority extends ComponentDefinition {
 			val = event.getKey();
 			stringValue = event.getValue();
 			RIWCMGetOperationRequest rgor = event;
-			readBebDataMessage = new ReadBebDataMessage(self, rid, receiversToArray(), rgor);
-			BroadcastReadRiwcm broadcastReadRiwcm = new BroadcastReadRiwcm(readBebDataMessage);
-			trigger(broadcastReadRiwcm, bebPort);
+			ReadBebDataMessage readBebDataMessage = new ReadBebDataMessage(self, rid);/*, receiversToArray(), rgor);*/
+//			BroadcastReadRiwcm broadcastReadRiwcm = new BroadcastReadRiwcm(readBebDataMessage);
+//			trigger(broadcastReadRiwcm, bebPort);
+			trigger(readBebDataMessage, bebPort);
 		}
 	};
 	
