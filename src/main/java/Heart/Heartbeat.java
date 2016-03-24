@@ -2,58 +2,82 @@ package Heart;
 
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.LinkedList;
-import java.util.UUID;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import Heart.*;
+import init.InitHeartbeat;
 import ports.BebPort;
-import se.sics.beb.BroadcastGet;
+import ports.HeartbeatPort;
+import se.sics.beb.BroadcastHeartbeat;
 import se.sics.kompics.ClassMatchedHandler;
 import se.sics.kompics.ComponentDefinition;
 import se.sics.kompics.Handler;
+import se.sics.kompics.Negative;
 import se.sics.kompics.Positive;
-import se.sics.kompics.Start;
-import se.sics.kompics.config.Conversions;
 import se.sics.kompics.network.Network;
 import se.sics.kompics.network.Transport;
-import se.sics.kompics.network.virtual.VirtualNetworkChannel;
-import se.sics.kompics.timer.CancelPeriodicTimeout;
-import se.sics.kompics.timer.SchedulePeriodicTimeout;
-import se.sics.kompics.timer.ScheduleTimeout;
-import se.sics.kompics.timer.Timeout;
-import se.sics.kompics.timer.Timer;
-import se.sics.pingpong.Pinger.PingTimeout;
-import se.sics.storage.GetOperationReply;
-import se.sics.storage.GetOperationRequest;
-import se.sics.storage.GetOperationRequestFromClient;
-import se.sics.storage.Storage;
-import se.sics.test.Ping;
-import se.sics.test.Pong;
 import se.sics.test.TAddress;
 import se.sics.test.TMessage;
 
 public class Heartbeat extends ComponentDefinition {
 	
 	private static final Logger LOG = LoggerFactory.getLogger(Heartbeat.class);
-	private HashMap<Integer, String> storage = new HashMap<>();
-	private HashMap<Integer, String> replica1 = new HashMap<>();
-	private HashMap<Integer, String> replica2 = new HashMap<>();
+	private ArrayList<TAddress> alive = new ArrayList<>();
+	private ArrayList<Suspect> suspected = new ArrayList<>();
 	private int id;
+	private int currentTime = 0;
+	private TAddress self;
+	private HashMap<String, Integer> timeMaster = new HashMap<>();
 	
 	Positive<Network> net = requires(Network.class);
+    Positive<BebPort> beb = requires(BebPort.class);
+	Negative<HeartbeatPort> heartbeatPort = provides(HeartbeatPort.class);
 
 	public Heartbeat(){
-		storage.put(1337, "senaps frö");
 	}
 	
-    Handler<Start> startHandler = new Handler<Start>() {
+	
+	Handler<InitHeartbeat> initHandler = new Handler<InitHeartbeat>(){
+    	
+    	@Override
+    	public void handle(InitHeartbeat event){
+    		self = event.self;
+    		timeMaster = event.timeMaster;
+    		alive = event.alive;
+    	}
+    };
+    
+    
+    Handler<HeartbeatInitMessage> initHeartbeatHandler = new Handler<HeartbeatInitMessage>() {
+
         @Override
-        public void handle(Start event) {
-        	id = 1;
-        	LOG.info("[JHFLKJHVKLJDHNLKJVNLKJNBFLKJNVÖFLKNBLKFJNBKLFNVÖLKENBLKJNDLJKVBLKJNVDKB DLKÖNVBV]");
+        public void handle(HeartbeatInitMessage event) {
+        	String sName1 = String.valueOf(self.getPort())+String.valueOf(alive.get(0).getPort());
+        	String sName2 = String.valueOf(self.getPort())+String.valueOf(alive.get(1).getPort());
+        	if((int)timeMaster.get(sName1) != event.id){
+        		LOG.info("Suspecting #{}Time is #{}, eventID is #{}", sName1, timeMaster.get(sName1), event.id);
+        		suspected.add(new Suspect(alive.get(0)));
+        	}
+        	if((int)timeMaster.get(sName2) != event.id){
+        		LOG.info("Suspecting #{} Time is #{}, eventID is #{}", sName2, timeMaster.get(sName2), event.id);
+        		suspected.add(new Suspect(alive.get(1)));
+        	}
+        	ArrayList<TAddress> sendTo = new ArrayList<TAddress>();
+        	for(TAddress addr: alive){
+        		boolean found = false;
+        		for(Suspect s : suspected){
+        			if(s.getSource().equals(addr)){
+        				found = true;
+        			}
+        		}
+        		if(!found){
+        			sendTo.add(addr);
+        		}
+        	}
+        	trigger(new BroadcastHeartbeat(self, sendTo, new HeartbeatRequestMessage(event.id)),beb);
+
+        	/* Add Suspection if id> timeMaster */
         }
     };
     
@@ -62,14 +86,43 @@ public class Heartbeat extends ComponentDefinition {
 
         @Override
         public void handle(HeartbeatRequestMessage content, TMessage context) {
-
-        		LOG.info("---GOT a Heartbeat!---");
-        	//	trigger(new TMessage(context.getSource(), context.getSource(), Transport.TCP, new GetOperationReply(key, value)), net);
-        	
+        	String sName = String.valueOf(self.getPort())+String.valueOf(context.getSource().getPort());
+    		//int iName = Integer.valueOf(sName);	
+        if(suspected.contains(context.getSource())){
+        		//suspected.remove(context.getSource());
+        		LOG.info("removes #{} from suspect, time is #{} and id is {}", context.getSource(), timeMaster.get(sName), content.getID());
+        	}
+        
+        trigger(new TMessage(self, context.getSource(), Transport.TCP, new HeartbeatReplyMessage(sName, content.getID())), net);
         }
+        
     };	
     
+    
+    ClassMatchedHandler<HeartbeatReplyMessage, TMessage> heartReplyHandler = new ClassMatchedHandler<HeartbeatReplyMessage, TMessage>() {
+
+        @Override
+        public void handle(HeartbeatReplyMessage content, TMessage context) {
+    		String sName = content.getCheck();
+    		String p1 = sName.substring(0, 4);
+    		String p2 = sName.substring(4, 8);
+    		sName = p2+p1;
+        	if(timeMaster.containsKey(sName)){
+        		timeMaster.replace(sName, timeMaster.get(sName)+1);
+        	}
+        	if(suspected.contains(context.getSource())){
+        		LOG.info("Removed #{} from suspected!!", context.getSource());
+        		suspected.remove(context.getSource());
+        	}
+        	currentTime++;
+        	//trigger(new TMessage(context.getSource(), context.getSource(), Transport.TCP, new HeartNodeMessage(sName,timeMaster.get(sName))), heartPort);
+        }
+    };	
+   
     {
     	subscribe(heartRequestHandler, net);
+    	subscribe(heartReplyHandler, net);
+    	subscribe(initHandler, heartbeatPort);
+    	subscribe(initHeartbeatHandler, heartbeatPort);
     }
 }
