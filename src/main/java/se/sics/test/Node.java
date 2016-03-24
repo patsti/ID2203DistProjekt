@@ -34,7 +34,7 @@ import se.sics.storage.GetOperationRequestFromClient;
 import se.sics.storage.PutOperationRequest;
 import se.sics.storage.PutOperationRequestFromClient;
 
-public class Node extends ComponentDefinition {
+public class Node extends ComponentDefinition{
 	
     private static final Logger LOG = LoggerFactory.getLogger(Node.class);
 	
@@ -49,6 +49,7 @@ public class Node extends ComponentDefinition {
     private int id = 0;
     private int min = 0;
     private int max = 0;
+    private int heartNum =0;
     
     private final TAddress self;
     private TAddress predecessor;
@@ -129,9 +130,10 @@ public class Node extends ComponentDefinition {
     Handler<PingTimeout> timeoutHandler = new Handler<PingTimeout>() {
         @Override
         public void handle(PingTimeout event) {
-//        	trigger(new BroadcastHeartbeat(self, replicationAddresses, new HeartbeatRequestMessage()),beb);
-        	Random rand = new Random();
-        	int key = rand.nextInt(100-0+1) + 0;
+        	trigger(new BroadcastHeartbeat(self, replicationAddresses, new HeartbeatRequestMessage(heartNum)),beb);
+        	heartNum++;
+//        	Random rand = new Random();
+//        	int key = rand.nextInt(100-0+1) + 0;
 //        	trigger(new BroadcastGet(self, replicationAddresses, new GetOperationRequest(key)), beb);
 //        	for(TAddress addr: replicationAddresses){
 //        		trigger(new TMessage(self, addr, Transport.TCP, new Ping()), net);

@@ -7,6 +7,7 @@ import se.sics.kompics.network.Address;
 import se.sics.kompics.simulator.adaptor.Operation;
 import se.sics.kompics.simulator.adaptor.Operation1;
 import se.sics.kompics.simulator.adaptor.Operation2;
+import se.sics.kompics.simulator.events.system.KillNodeEvent;
 import se.sics.kompics.simulator.events.system.StartNodeEvent;
 import se.sics.test.TAddress;
 import se.sics.test.*;
@@ -141,5 +142,29 @@ public class Operations extends ComponentDefinition {
     	int key = rand.nextInt(MAX-MIN+1)+MIN;
     	return key;
     }  
-   
+    static Operation1 killNode = new Operation1<KillNodeEvent, Integer>() {
+
+        @Override
+        public KillNodeEvent generate(final Integer port) {
+
+            return new KillNodeEvent() {
+
+                private Address killerAddress;
+
+                //this constructor is killer
+                {
+                    try{
+                        killerAddress = new TAddress(InetAddress.getByName(IP), port);
+                    }catch (Exception e){
+                    	e.printStackTrace();
+                    }
+                }
+
+                @Override
+                public Address getNodeAddress() {
+                    return killerAddress;
+                }
+            };
+        }
+    };
 }
