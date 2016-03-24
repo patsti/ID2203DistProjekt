@@ -140,6 +140,7 @@ public class Node extends ComponentDefinition {
         public void handle(PingTimeout event) {
         	//trigger(new BroadcastHeartbeat(self, replicationAddresses, new HeartbeatRequestMessage(currentTime)),beb);
         	trigger(new HeartbeatInitMessage(currentTime, replicationAddresses), heartbeatPort);
+			
         	Random rand = new Random();
         	int key = rand.nextInt(100-0+1) + 0;
         	trigger(new BroadcastGet(self, replicationAddresses, new GetOperationRequest(key)), beb);
