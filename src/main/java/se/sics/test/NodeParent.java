@@ -56,7 +56,13 @@ public class NodeParent extends ComponentDefinition{
         Component storage = create(Storage.class, Init.NONE);
         Component beb = create(BEBroadcast.class, new BEBroadcast.Init(self, addresses));
         Component heart = create(Heartbeat.class, Init.NONE);
-        Component riwcm = create(ReadImposeWriteConsultMajority.class, new ReadImposeWriteConsultMajorityInit(self, id, addresses));
+        
+        
+        
+//        Component riwcm = create(ReadImposeWriteConsultMajority.class, new ReadImposeWriteConsultMajorityInit(self, id, addresses));
+        Component riwcm = create(ReadImposeWriteConsultMajority.class, new ReadImposeWriteConsultMajority.Init(self, id, addresses));
+
+        
         
         //BACKUP
 //        connect(heart.getNegative(Network.class), network.getPositive(Network.class), Channel.TWO_WAY);
@@ -67,6 +73,7 @@ public class NodeParent extends ComponentDefinition{
         connect(storage.getNegative(Network.class), network, Channel.TWO_WAY);
         connect(beb.getNegative(Network.class), network, Channel.TWO_WAY);
         connect(node.getNegative(Network.class), network, Channel.TWO_WAY);
+        connect(riwcm.getNegative(Network.class), network, Channel.TWO_WAY);
         connect(node.getNegative(Timer.class), timer, Channel.TWO_WAY);
         connect(node.getNegative(BebPort.class), beb.getPositive(BebPort.class), Channel.TWO_WAY);
         
@@ -83,7 +90,6 @@ public class NodeParent extends ComponentDefinition{
     	for(int i = 0; i < list.size(); i++){
     		TAddress temp = Conversions.convert(list.get(i), TAddress.class);
     		this.addresses.add(temp);
-    	
     	}
     }
     

@@ -1,5 +1,6 @@
 package se.sics.test;
 
+
 import java.io.Serializable;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
@@ -7,7 +8,7 @@ import java.util.Arrays;
 import java.util.Objects;
 import se.sics.kompics.network.Address;
 
-public class TAddress implements se.sics.kompics.network.virtual.Address{
+public class TAddress implements se.sics.kompics.network.virtual.Address, Serializable{
 
     private final InetSocketAddress isa;
     private final byte[] id;

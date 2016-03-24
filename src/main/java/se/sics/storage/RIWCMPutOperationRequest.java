@@ -5,8 +5,7 @@ import java.io.Serializable;
 import se.sics.kompics.KompicsEvent;
 import se.sics.test.TAddress;
 
-public class RIWCMGetOperationRequest implements KompicsEvent, Serializable {
-	
+public class RIWCMPutOperationRequest implements KompicsEvent, Serializable {
 	/**
 	 * 
 	 */
@@ -16,7 +15,7 @@ public class RIWCMGetOperationRequest implements KompicsEvent, Serializable {
 	private TAddress source;
 	
 	
-	public RIWCMGetOperationRequest(int key, String value, TAddress source){
+	public RIWCMPutOperationRequest(int key, String value, TAddress source){
 		this.key = key;
 		this.value = value;
 		this.source = source;
@@ -42,4 +41,5 @@ public class RIWCMGetOperationRequest implements KompicsEvent, Serializable {
 	public TAddress getSource(){
 		return source;
 	}
+	
 }

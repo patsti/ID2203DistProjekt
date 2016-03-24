@@ -17,12 +17,15 @@ import se.sics.beb.BroadcastWriteRiwcm;
 import se.sics.kompics.ClassMatchedHandler;
 import se.sics.kompics.ComponentDefinition;
 import se.sics.kompics.Handler;
+import se.sics.kompics.Init;
 import se.sics.kompics.Negative;
 import se.sics.kompics.Positive;
 import se.sics.kompics.Start;
 import se.sics.kompics.network.Network;
 import se.sics.kompics.network.Transport;
+import se.sics.storage.GetOperationReply;
 import se.sics.storage.RIWCMGetOperationRequest;
+import se.sics.storage.RIWCMPutOperationRequest;
 import se.sics.test.TAddress;
 import se.sics.test.TMessage;
 
@@ -48,13 +51,15 @@ public class ReadImposeWriteConsultMajority extends ComponentDefinition {
 	private Integer rr;
 	private Integer maxts;
 	private Integer selfId;
+	private TAddress client;
+	private int key;
 
-	public ReadImposeWriteConsultMajority(ReadImposeWriteConsultMajorityInit event) {
+	public ReadImposeWriteConsultMajority(Init event){//ReadImposeWriteConsultMajorityInit event) {
 		this.self = event.getSelfAddress();
 		this.selfId = event.getId();
 		this.receivers = new HashSet<TAddress>(event.getAllAddresses());
 		this.readList = new LinkedList<ReadObject>();
-		this.numberOfNodes = this.receivers.size();
+		this.numberOfNodes = this.receivers.size()+1;
 		this.rid = 0;
 		this.acks = 0;
 		this.reading = false;
@@ -71,17 +76,8 @@ public class ReadImposeWriteConsultMajority extends ComponentDefinition {
 		subscribe(readRequest, riwcmPort);
 		subscribe(bebDeliver, network);
 		subscribe(arDeliver, network);
-//		subscribe(arDeliver, bebPort);
-//		subscribe(bebDeliver, bebPort);
-		
-//		subscribe(readRequest, ar);
-//		subscribe(writeRequest, ar);
-//		
-//		subscribe(bebDeliver, beb);
-//		subscribe(writeValue, beb);
-//		
-//		subscribe(arDeliver, pp2p);
-//		subscribe(ackHandler, pp2p);
+		subscribe(writeValue, network);
+		subscribe(ackHandler, network);
 	}
 
 	private Handler<Start> startHandler = new Handler<Start>() {
@@ -97,6 +93,8 @@ public class ReadImposeWriteConsultMajority extends ComponentDefinition {
 
 		@Override
 		public void handle(RIWCMGetOperationRequest event) {
+			client = event.getSource();
+			key = event.getKey();
 			LOG.info("Got read request from Node");
 			rid++;
 			acks = 0;
@@ -106,8 +104,6 @@ public class ReadImposeWriteConsultMajority extends ComponentDefinition {
 			stringValue = event.getValue();
 			RIWCMGetOperationRequest rgor = event;
 			ReadBebDataMessage readBebDataMessage = new ReadBebDataMessage(self, rid);/*, receiversToArray(), rgor);*/
-//			BroadcastReadRiwcm broadcastReadRiwcm = new BroadcastReadRiwcm(readBebDataMessage);
-//			trigger(broadcastReadRiwcm, bebPort);
 			trigger(readBebDataMessage, bebPort);
 		}
 	};
@@ -120,25 +116,31 @@ public class ReadImposeWriteConsultMajority extends ComponentDefinition {
 		return temp;
 	}
 
-//	private Handler<GetOperationRequest> bebDeliver = new Handler<GetOperationRequest>() {
+
+	
     ClassMatchedHandler<ReadBebDataMessage, TMessage> bebDeliver = new ClassMatchedHandler<ReadBebDataMessage, TMessage>() {
 
 		@Override
 		public void handle(ReadBebDataMessage event, TMessage context) {
 			LOG.info("\t\tDelivered BEB message {}", event.getR());
 			
-			RIWCMDataMessage arMessage = new RIWCMDataMessage(self, event.getR(), ts, wr, val);
+			
+			RIWCMDataMessage arMessage = new RIWCMDataMessage(self, event.getR(), ts, wr, val, stringValue);
 			trigger(new TMessage(self, context.getSource(), Transport.TCP , arMessage), network);
 		}
 	};
 
-//	private Handler<ArDataMessage> arDeliver = new Handler<ArDataMessage>() {
+	
+	
+
     ClassMatchedHandler<RIWCMDataMessage, TMessage> arDeliver = new ClassMatchedHandler<RIWCMDataMessage, TMessage>() {
 
 		@Override
 		public void handle(RIWCMDataMessage event, TMessage context) {
+			
+			LOG.info("\t\tReceived RIWCMDataMessage {}", event.toString());
 			if (event.getR().equals(rid)) {
-				readList.add(new ReadObject(event.getTs(), event.getWr(), event.getVal(), event.getR()));
+				readList.add(new ReadObject(event.getTs(), event.getWr(), event.getVal(), event.getR(), event.getStringValue()));
 				
 				if (readList.size() > (numberOfNodes / 2)) {
 					// Sort of readList based on 'ts' or on 'wr'
@@ -180,69 +182,100 @@ public class ReadImposeWriteConsultMajority extends ComponentDefinition {
 		}
 	};
 
-//	private Handler<ArWriteRequest> writeRequest = new Handler<ArWriteRequest>() {
-//
-//		@Override
-//		public void handle(ArWriteRequest event) {
-//			rid++;
+	private Handler<RIWCMPutOperationRequest> writeRequest = new Handler<RIWCMPutOperationRequest>() {
+//	ClassMatchedHandler<RIWCMPutOperationRequest, TMessage> writeRequest = new ClassMatchedHandler<RIWCMPutOperationRequest, TMessage>() {
+
+		@Override
+		public void handle(RIWCMPutOperationRequest event) {
+			rid++;
 //			writeVal = event.getValue();
-//			acks = 0;
-//			readList.clear();
-//			ReadBebDataMessage bebMessage = new ReadBebDataMessage(self, rid);
-//			trigger(new BebBroadcast(bebMessage), beb);
-//		}
-//	};
-//
-//	private Handler<WriteBebDataMessage> writeValue = new Handler<WriteBebDataMessage>() {
-//
-//		@Override
-//		public void handle(WriteBebDataMessage event) {
-//			//How da fuck Java evaluate expressions
-//			/*if ((event.getTs() > ts) || (event.getWr() > wr)) {
-//				ts = event.getTs();
-//				wr = event.getWr();
-//				val = event.getVal();
-//			}*/
-//			if (event.getTs().equals(ts)) {
-//				if (event.getWr() > wr) {
-//					ts = event.getTs();
-//					wr = event.getWr();
-//					val = event.getVal();
-//				}
-//			} else if (event.getTs() > ts) {
-//				ts = event.getTs();
-//				wr = event.getWr();
-//				val = event.getVal();
-//			}
-//			// trigger ACK
-//			//logger.info("Sending ACK to: {}", event.getSource());
-//			trigger(new Pp2pSend(event.getSource(), new AckMessage(self,
-//					event.getR())), pp2p);
-//		}
-//	};
-//	
-//	private Handler<AckMessage> ackHandler = new Handler<AckMessage>() {
-//
-//		@Override
-//		public void handle(AckMessage event) {
-//			if (event.getR().equals(rid)) {
-//				acks++;
-//				//logger.info("Number of ACKs received: {}", acks);
-//				if (acks > (numberOfNodes / 2)) {
-//					//logger.info("Gathered the required ACKs!");
-//					acks = 0;
-//					
-//					if (reading) {
-//						reading = false;
-//						ArReadResponse resp = new ArReadResponse(readVal);
-//						//logger.info("Sending ReadResponse with value: {}", readVal);
-//						trigger(resp, ar);
-//					} else {
-//						//logger.info("Sending WriteResponse with value");
-//						trigger(new ArWriteResponse(), ar);
-//					}
-//				}
-//			}
-//		}
-//	};
+			stringValue = event.getValue();
+			acks = 0;
+			readList.clear();
+			ReadBebDataMessage bebMessage = new ReadBebDataMessage(self, rid);
+			trigger(bebMessage, bebPort);
+		}
+	};
+
+	
+	ClassMatchedHandler<WriteBebDataMessage, TMessage> writeValue = new ClassMatchedHandler<WriteBebDataMessage, TMessage>() {
+
+		@Override
+		public void handle(WriteBebDataMessage event, TMessage context) {
+			
+			LOG.info("\t\tReceived WriteBebDataMessage {}", event.toString());
+			
+			if (event.getTs().equals(ts)) {
+				if (event.getWr() > wr) {
+					ts = event.getTs();
+					wr = event.getWr();
+					val = event.getVal();
+				}
+			} else if (event.getTs() > ts) {
+				ts = event.getTs();
+				wr = event.getWr();
+				val = event.getVal();
+			}
+			
+			// trigger ACK
+			LOG.info("Sending ACK to: {}", event.getSource());
+			trigger(new TMessage(self, context.getSource(), Transport.TCP, new AckMessage(self, event.getR())), network);
+		}
+	};
+	
+	ClassMatchedHandler<AckMessage, TMessage> ackHandler = new ClassMatchedHandler<AckMessage, TMessage>() {
+		
+		@Override
+		public void handle(AckMessage event, TMessage context) {
+			
+//			LOG.info("\t\tReceived AckMessage from {}, Acks: {}", event.getR(), acks);
+			
+			if (event.getR().equals(rid)) {
+				acks++;
+				//logger.info("Number of ACKs received: {}", acks);
+				if (acks > (numberOfNodes / 2)) {
+					//logger.info("Gathered the required ACKs!");
+					acks = 0;
+					
+					if (reading) {
+						reading = false;
+						GetOperationReply reply = new GetOperationReply(key, stringValue);
+						LOG.info("[SELF] "+self.toString()+ " Sending ReadResponse with value: {}", stringValue);
+						trigger(new TMessage(client, client, Transport.TCP, reply), network);
+					}
+				}
+			}
+		}
+
+	};
+	
+	
+	
+	public static class Init extends se.sics.kompics.Init<ReadImposeWriteConsultMajority> {
+
+		private final TAddress selfAddress;
+		private final ArrayList<TAddress> allAddresses;
+		private final Integer id;
+
+		public Init(TAddress selfAddress, Integer id, ArrayList<TAddress> allAddresses) {
+			this.selfAddress = selfAddress;
+			this.allAddresses = allAddresses;
+			this.id = id;
+		}
+		
+		public final TAddress getSelfAddress() {
+			return selfAddress;
+		}
+
+		public final ArrayList<TAddress> getAllAddresses() {
+			return allAddresses;
+		}
+		
+		public final Integer getId(){
+			return id;
+		}
+		
+	}
+	
+	
 }

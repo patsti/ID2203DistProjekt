@@ -11,13 +11,15 @@ public class RIWCMDataMessage implements KompicsEvent, Serializable {
 
 	private final TAddress source;
 	private final Integer ts, r, wr, val;
+	private String stringValue;
 
-	protected RIWCMDataMessage(TAddress source, Integer r, Integer ts, Integer wr, Integer val) {
+	protected RIWCMDataMessage(TAddress source, Integer r, Integer ts, Integer wr, Integer val, String stringValue) {
 		this.source = source;
 		this.r = r;
 		this.ts = ts;
 		this.wr = wr;
 		this.val = val;
+		this.stringValue = stringValue;
 	}
 
 	public Integer getR() {
@@ -34,6 +36,10 @@ public class RIWCMDataMessage implements KompicsEvent, Serializable {
 
 	public Integer getVal() {
 		return val;
+	}
+	
+	public String getStringValue(){
+		return stringValue;
 	}
 }
 

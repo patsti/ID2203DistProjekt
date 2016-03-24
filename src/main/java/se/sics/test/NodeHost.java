@@ -40,8 +40,7 @@ public class NodeHost extends ComponentDefinition {
         Serializers.register(TAddress.class, "netS");
         Serializers.register(THeader.class, "netS");
         Serializers.register(TMessage.class, "netS");
-        Serializers.register(Ping.class, "ppS");
-        Serializers.register(Pong.class, "ppS");
+        
         // conversions
         Conversions.register(new TAddressConverter());
 	}

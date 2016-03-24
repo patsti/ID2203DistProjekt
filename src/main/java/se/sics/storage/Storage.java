@@ -75,11 +75,12 @@ public class Storage extends ComponentDefinition {
         	}else{
         		String value = storage.get(key);
         		LOG.info("[GetOperation] From: {} key: {} value: {} - Sending it back to: {}",self.getPort() ,key, value, context.getSource().getPort());
-        		trigger(new TMessage(context.getSource(), context.getSource(), Transport.TCP, new GetOperationReply(key, value)), net);
-        		trigger(new RIWCMGetOperationRequest(key, value), riwcmPort);
+//        		trigger(new TMessage(context.getSource(), context.getSource(), Transport.TCP, new GetOperationReply(key, value)), net);
+        		trigger(new RIWCMGetOperationRequest(key, value, context.getSource()), riwcmPort);
         	}
         }
     };
+
     
     ClassMatchedHandler<PutOperationRequest, TMessage> putOperationRequestHandler = new ClassMatchedHandler<PutOperationRequest, TMessage>() {
 
@@ -92,6 +93,7 @@ public class Storage extends ComponentDefinition {
         		if(key <= max && key >= min ){
             		LOG.info("[PutOperation] From: {} key: {} storing value: {}",self.getPort() ,key, value);
             		storage.put(key, value);
+            		trigger(new RIWCMPutOperationRequest(key, value, context.getSource()), riwcmPort);
             	}
         	}
         }
