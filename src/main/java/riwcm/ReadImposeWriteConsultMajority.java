@@ -1,59 +1,80 @@
-//package riwcm;
-//
-//import java.awt.List;
-//import java.util.HashSet;
-//import java.util.LinkedList;
-//import java.util.Set;
-//
-//import org.slf4j.Logger;
-//import org.slf4j.LoggerFactory;
-//
-//import se.sics.kompics.ComponentDefinition;
-//import se.sics.kompics.Handler;
-//import se.sics.kompics.Negative;
-//import se.sics.kompics.Positive;
-//import se.sics.kompics.Start;
-//import se.sics.test.TAddress;
-//
-//public class ReadImposeWriteConsultMajority extends ComponentDefinition {
-//
-//	private static final Logger logger = LoggerFactory.getLogger(ReadImposeWriteConsultMajority.class);
-//
-//	private Positive<BestEffortBroadcast> beb = requires(BestEffortBroadcast.class);
-//	private Positive<PerfectPointToPointLink> pp2p = requires(PerfectPointToPointLink.class);
-//	private Negative<AtomicRegister> ar = provides(AtomicRegister.class);
-//
-//	private final TAddress self;
-//	private final Set<TAddress> nodes;
-//	private final Integer numberOfNodes;
-//	private LinkedList<ReadObject> readList;
-//	private Integer rid;
-//	private Integer acks;
-//	private Integer wr, val, writeVal, readVal;
-//	private Integer ts;
-//	private Boolean reading;
-//	private WriteBebDataMessage wBebMsg;
-//	private Integer rr;
-//	private Integer maxts;
-//
-//	public ReadImposeWriteConsultMajority(ReadImposeWriteConsultMajorityInit event) {
-//		this.self = event.getSelfAddress();
-//		this.nodes = new HashSet<TAddress>(event.getAllAddresses());
-//		this.readList = new LinkedList<ReadObject>();
-//		this.numberOfNodes = this.nodes.size();
-//		this.rid = 0;
-//		this.acks = 0;
-//		this.reading = false;
-//		this.ts = 0;
-//		this.wr = 0;
-//		this.val = 0;
-//		this.writeVal = null;
-//		this.readVal = null;
-//		this.rr = 0;
-//		this.maxts = -1;
-//		
-//		subscribe(startHandler, control);
-//		
+package riwcm;
+
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.HashSet;
+import java.util.LinkedList;
+import java.util.Set;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import ports.BebPort;
+import ports.RIWCMport;
+import se.sics.beb.BroadcastReadRiwcm;
+import se.sics.beb.BroadcastWriteRiwcm;
+import se.sics.kompics.ClassMatchedHandler;
+import se.sics.kompics.ComponentDefinition;
+import se.sics.kompics.Handler;
+import se.sics.kompics.Negative;
+import se.sics.kompics.Positive;
+import se.sics.kompics.Start;
+import se.sics.kompics.network.Network;
+import se.sics.kompics.network.Transport;
+import se.sics.storage.RIWCMGetOperationRequest;
+import se.sics.test.TAddress;
+import se.sics.test.TMessage;
+
+public class ReadImposeWriteConsultMajority extends ComponentDefinition {
+
+	private static final Logger LOG = LoggerFactory.getLogger(ReadImposeWriteConsultMajority.class);
+	
+	private Positive<Network> network = requires(Network.class); 
+	private Negative<RIWCMport> riwcmPort = provides(RIWCMport.class);
+	private Positive<BebPort> bebPort = requires(BebPort.class);
+
+	private final TAddress self;
+	private final Set<TAddress> receivers;
+	private final Integer numberOfNodes;
+	private LinkedList<ReadObject> readList;
+	private Integer rid;
+	private Integer acks;
+	private Integer wr, val, writeVal, readVal;
+	private String stringValue;
+	private Integer ts;
+	private Boolean reading;
+	private WriteBebDataMessage wBebMsg;
+	private ReadBebDataMessage readBebDataMessage;
+	private Integer rr;
+	private Integer maxts;
+	private Integer selfId;
+
+	public ReadImposeWriteConsultMajority(ReadImposeWriteConsultMajorityInit event) {
+		this.self = event.getSelfAddress();
+		this.selfId = event.getId();
+		this.receivers = new HashSet<TAddress>(event.getAllAddresses());
+		this.readList = new LinkedList<ReadObject>();
+		this.numberOfNodes = this.receivers.size();
+		this.rid = 0;
+		this.acks = 0;
+		this.reading = false;
+		this.ts = 0;
+		this.wr = 0;
+		this.val = 0;
+		this.writeVal = null;
+		this.readVal = null;
+		this.rr = 0;
+		this.maxts = -1;
+		this.stringValue = "";
+		
+		subscribe(startHandler, control);
+		subscribe(readRequest, riwcmPort);
+		subscribe(bebDeliver, network);
+		subscribe(arDeliver, network);
+//		subscribe(arDeliver, bebPort);
+//		subscribe(bebDeliver, bebPort);
+		
 //		subscribe(readRequest, ar);
 //		subscribe(writeRequest, ar);
 //		
@@ -62,90 +83,103 @@
 //		
 //		subscribe(arDeliver, pp2p);
 //		subscribe(ackHandler, pp2p);
-//	}
-//
-//	private Handler<Start> startHandler = new Handler<Start>() {
-//
-//		@Override
-//		public void handle(Start event) {
-//			logger.info("Atomic Register component started");
-//		}
-//	};
-//
-//	private Handler<ArReadRequest> readRequest = new Handler<ArReadRequest>() {
-//
-//		@Override
-//		public void handle(ArReadRequest event) {
-//			//logger.info("Got read request from Application");
-//			rid++;
-//			acks = 0;
-//			readList.clear();
-//			reading = true;
-//			ReadBebDataMessage bebMessage = new ReadBebDataMessage(self, rid);
-//			trigger(new BebBroadcast(bebMessage), beb);
-//		}
-//	};
-//
-//	private Handler<ReadBebDataMessage> bebDeliver = new Handler<ReadBebDataMessage>() {
-//
-//		@Override
-//		public void handle(ReadBebDataMessage event) {
-//			//logger.info("Delivered BEB message {}", event.getR());
-//			ArDataMessage arMessage = new ArDataMessage(self, event.getR(),
-//					ts, wr, val);
-//			trigger(new Pp2pSend(event.getSource(), arMessage), pp2p);
-//		}
-//	};
-//
+	}
+
+	private Handler<Start> startHandler = new Handler<Start>() {
+
+		@Override
+		public void handle(Start event) {
+			LOG.info("ReadImposeWriteConsultMajority component started");
+		}
+	};
+
+	//ReadRequest
+	private Handler<RIWCMGetOperationRequest> readRequest = new Handler<RIWCMGetOperationRequest>() {
+
+		@Override
+		public void handle(RIWCMGetOperationRequest event) {
+			LOG.info("Got read request from Node");
+			rid++;
+			acks = 0;
+			readList.clear();
+			reading = true;
+			val = event.getKey();
+			stringValue = event.getValue();
+			RIWCMGetOperationRequest rgor = event;
+			readBebDataMessage = new ReadBebDataMessage(self, rid, receiversToArray(), rgor);
+			BroadcastReadRiwcm broadcastReadRiwcm = new BroadcastReadRiwcm(readBebDataMessage);
+			trigger(broadcastReadRiwcm, bebPort);
+		}
+	};
+	
+	private ArrayList<TAddress> receiversToArray(){
+		
+		ArrayList<TAddress> temp = new ArrayList<>();
+		for(TAddress addr: receivers)
+			temp.add(addr);
+		return temp;
+	}
+
+//	private Handler<GetOperationRequest> bebDeliver = new Handler<GetOperationRequest>() {
+    ClassMatchedHandler<ReadBebDataMessage, TMessage> bebDeliver = new ClassMatchedHandler<ReadBebDataMessage, TMessage>() {
+
+		@Override
+		public void handle(ReadBebDataMessage event, TMessage context) {
+			LOG.info("\t\tDelivered BEB message {}", event.getR());
+			
+			RIWCMDataMessage arMessage = new RIWCMDataMessage(self, event.getR(), ts, wr, val);
+			trigger(new TMessage(self, context.getSource(), Transport.TCP , arMessage), network);
+		}
+	};
+
 //	private Handler<ArDataMessage> arDeliver = new Handler<ArDataMessage>() {
-//
-//		@Override
-//		public void handle(ArDataMessage event) {
-//			if (event.getR().equals(rid)) {
-//				readList.add(new ReadObject(event.getTs(), event.getWr(), event.getVal(), event.getSource().getId()));
-//				
-//				if (readList.size() > (numberOfNodes / 2)) {
-//					// Sort of readList based on 'ts' or on 'wr'
-//					Collections.sort(readList, new Comparator<ReadObject>() {
-//						@Override
-//						public int compare(ReadObject obj0, ReadObject obj1) {
-//							if (obj0.getTs().equals(obj1.getTs())) {
-//								return obj0.getNodeId() < obj1.getNodeId() ? -1 : 1;
-//							} else if (obj0.getTs() < obj1.getTs()) {
-//								return -1;
-//							} else {
-//								return 1;
-//							}
-//						}
-//					});
-//
-//					ReadObject highest = readList.get(readList.size() - 1);
-//
-//					rr = new Integer(highest.getWr());
-//					readVal = new Integer(highest.getVal());
-//					maxts = new Integer(highest.getTs());
-//
-//					readList.clear();
-//
-//					if (reading) {
-//						// trigger <beb, Broadcast | [Write, rid, maxts, rr,
-//						// readval]>;
-//						wBebMsg = new WriteBebDataMessage(
-//								self, rid, maxts, rr, readVal);
-//						trigger(new BebBroadcast(wBebMsg), beb);
-//					} else {
-//						// trigger <beb, Broadcast | [Write, rid, maxts + 1,
-//						// rank(self ), writeval]>;
-//						wBebMsg = new WriteBebDataMessage(
-//								self, rid, maxts + 1, self.getId(),
-//								writeVal);
-//						trigger(new BebBroadcast(wBebMsg), beb);
-//					}
-//				}
-//			}
-//		}
-//	};
-//
+    ClassMatchedHandler<RIWCMDataMessage, TMessage> arDeliver = new ClassMatchedHandler<RIWCMDataMessage, TMessage>() {
+
+		@Override
+		public void handle(RIWCMDataMessage event, TMessage context) {
+			if (event.getR().equals(rid)) {
+				readList.add(new ReadObject(event.getTs(), event.getWr(), event.getVal(), event.getR()));
+				
+				if (readList.size() > (numberOfNodes / 2)) {
+					// Sort of readList based on 'ts' or on 'wr'
+					Collections.sort(readList, new Comparator<ReadObject>(){
+
+						@Override
+						public int compare(ReadObject obj0, ReadObject obj1) {
+							if (obj0.getTs().equals(obj1.getTs())) {
+								return obj0.getNodeId() < obj1.getNodeId() ? -1 : 1;
+							} else if (obj0.getTs() < obj1.getTs()) {
+								return -1;
+							} else {
+								return 1;
+							}
+						}
+						
+					});
+					ReadObject highest = readList.get(readList.size() - 1);
+
+					rr = new Integer(highest.getWr());
+					readVal = new Integer(highest.getVal());
+					maxts = new Integer(highest.getTs());
+
+					readList.clear();
+
+					if (reading) {
+						// trigger <beb, Broadcast | [Write, rid, maxts, rr,
+						// readval]>;
+						wBebMsg = new WriteBebDataMessage(self, receiversToArray(), stringValue, rid, maxts, rr, readVal);
+						trigger(new BroadcastWriteRiwcm(wBebMsg), bebPort);
+					} else {
+						// trigger <beb, Broadcast | [Write, rid, maxts + 1,
+						// rank(self ), writeval]>;
+						wBebMsg = new WriteBebDataMessage(self, receiversToArray(), stringValue, rid, maxts+1, selfId, writeVal);
+						trigger(new BroadcastWriteRiwcm(wBebMsg), bebPort);
+					}
+				}
+			}
+		}
+	};
+
 //	private Handler<ArWriteRequest> writeRequest = new Handler<ArWriteRequest>() {
 //
 //		@Override
@@ -211,4 +245,4 @@
 //			}
 //		}
 //	};
-//}
+}

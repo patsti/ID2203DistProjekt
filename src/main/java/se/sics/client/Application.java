@@ -19,19 +19,20 @@ import se.sics.kompics.network.Transport;
 import se.sics.kompics.timer.ScheduleTimeout;
 import se.sics.kompics.timer.Timer;
 import se.sics.storage.GetOperationReply;
+import se.sics.storage.GetOperationRequest;
 import se.sics.storage.GetOperationRequestFromClient;
-import se.sics.storage.PutOperationRequest;
 import se.sics.storage.PutOperationRequestFromClient;
 import se.sics.test.TAddress;
 import se.sics.test.TMessage;
 
-public final class Application extends ComponentDefinition {
+public class Application extends ComponentDefinition {
 
 	private static final Logger LOG = LoggerFactory.getLogger(Application.class);
 
-	private Positive<Timer> timer = requires(Timer.class);
-	private Positive<Console> console = requires(Console.class);
-	private Positive<Network> net = requires(Network.class);
+	Positive<Timer> timer = requires(Timer.class);
+	Positive<Network> network = requires(Network.class); 
+	Positive<Console> console = requires(Console.class);
+
 
 	private TAddress self;
 	private ArrayList<TAddress> nodes;
@@ -42,17 +43,17 @@ public final class Application extends ComponentDefinition {
 
 
 	public Application(ApplicationInit event) {
-		subscribe(handleStart, control);
-		subscribe(handleConsoleInput, console);
+//		subscribe(handleStart, control);
+//		subscribe(handleConsoleInput, console);
 		
-		
-	
 		nodes = event.getAllAddresses();
-		self = event.getSelfAddress();
-		
+		self = event.getSelfAddress();		
 		commands = new ArrayList<String>(Arrays.asList(event.getCommandScript().split(":")));
+		
         commands.add("$DONE");
         blocking = false;
+        
+        
 	}
 
 	private Handler<Start> handleStart = new Handler<Start>() {
@@ -123,13 +124,7 @@ public final class Application extends ComponentDefinition {
     	
     	TAddress node = nodes.get(2);
 		LOG.info("Sending GET<key> {} to Port {}", key, node.getPort());
-		trigger(new TMessage(self, node, Transport.TCP, new GetOperationRequestFromClient(Integer.parseInt(key)) ), net);
-    	
-
-//		for (TAddress node : nodes) {
-//			LOG.info("Sending GET<key> {} to Port {}", key, node.getPort());
-//			trigger(new TMessage(self, node, Transport.TCP, new GetOperationRequestFromClient(Integer.parseInt(key)) ), net);
-//		}
+		trigger(new TMessage(self, node, Transport.TCP, new GetOperationRequestFromClient(Integer.parseInt(key)) ), network);
 	}
     
     private final void doPUT(String cmd){
@@ -144,7 +139,8 @@ public final class Application extends ComponentDefinition {
     	LOG.info("Key: "+key+" Value: "+value);
     	TAddress node = nodes.get(2);
 		LOG.info("Sending PUT<key,value> key: {}, value: {} to Port {}", key, value, node.getPort());
-		trigger(new TMessage(self, node, Transport.TCP, new PutOperationRequestFromClient(Integer.parseInt(key), value)), net);
+//		LOG.info("[NETWORK POSITIVE] "+network.getOwner().getParent().toString());
+		trigger(new TMessage(self, node, Transport.TCP, new PutOperationRequestFromClient(Integer.parseInt(key), value)), network);
     }
     
     
@@ -176,6 +172,8 @@ public final class Application extends ComponentDefinition {
 	
 	{
 		subscribe(handleStart, control);
-		subscribe(getReplyHandler, net);
+		subscribe(getReplyHandler, network);
+		subscribe(handleStart, control);
+		subscribe(handleConsoleInput, console);		
 	}
 }
