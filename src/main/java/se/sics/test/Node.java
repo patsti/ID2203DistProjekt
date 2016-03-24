@@ -135,15 +135,8 @@ public class Node extends ComponentDefinition{
     Handler<PingTimeout> timeoutHandler = new Handler<PingTimeout>() {
         @Override
         public void handle(PingTimeout event) {
-        //	trigger(new BroadcastHeartbeat(self, replicationAddresses, new HeartbeatRequestMessage(heartNum)),beb);
         	trigger(new HeartbeatInitMessage(heartNum, replicationAddresses), heartbeatPort);
         	heartNum++;
-//        	Random rand = new Random();
-//        	int key = rand.nextInt(100-0+1) + 0;
-//        	trigger(new BroadcastGet(self, replicationAddresses, new GetOperationRequest(key)), beb);
-//        	for(TAddress addr: replicationAddresses){
-//        		trigger(new TMessage(self, addr, Transport.TCP, new Ping()), net);
-//        	}
         }
     };
     

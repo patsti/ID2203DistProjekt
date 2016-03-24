@@ -55,7 +55,6 @@ public class Heartbeat extends ComponentDefinition {
         public void handle(HeartbeatInitMessage event) {
         	String sName1 = String.valueOf(self.getPort())+String.valueOf(alive.get(0).getPort());
         	String sName2 = String.valueOf(self.getPort())+String.valueOf(alive.get(1).getPort());
-        	LOG.info("init heartbeat from #{}",self.getPort());
 
         	if((int)timeMaster.get(sName1) != event.id){
         		LOG.info("Suspecting #{}Time is #{}, eventID is #{}", sName1, timeMaster.get(sName1), event.id);
@@ -120,6 +119,7 @@ public class Heartbeat extends ComponentDefinition {
         		suspected.remove(context.getSource());
         	}
         	currentTime++;
+        	LOG.info("Time for {} increased to #{}", sName,timeMaster.get(sName));
         	//trigger(new TMessage(context.getSource(), context.getSource(), Transport.TCP, new HeartNodeMessage(sName,timeMaster.get(sName))), heartPort);
         }
     };	

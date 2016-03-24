@@ -70,6 +70,7 @@ public class NodeParent extends ComponentDefinition{
         connect(node.getNegative(Network.class), network, Channel.TWO_WAY);
         connect(node.getNegative(Timer.class), timer, Channel.TWO_WAY);
         connect(node.getNegative(BebPort.class), beb.getPositive(BebPort.class), Channel.TWO_WAY);
+        connect(heart.getNegative(BebPort.class), beb.getPositive(BebPort.class), Channel.TWO_WAY);
         connect(node.getNegative(HeartbeatPort.class), heart.getPositive(HeartbeatPort.class), Channel.TWO_WAY);
         
 //        connect(node.getNegative(Timer.class), timer.getPositive(Timer.class), Channel.TWO_WAY);
