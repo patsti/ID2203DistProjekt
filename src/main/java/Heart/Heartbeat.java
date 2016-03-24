@@ -72,6 +72,8 @@ public class Heartbeat extends ComponentDefinition {
         			}
         		}
         		if(!found){
+        			LOG.info("#{}{} not suspected in event #{}", self.getPort(), addr.getPort(),event.id);
+
         			sendTo.add(addr);
         		}
         	}
@@ -115,6 +117,7 @@ public class Heartbeat extends ComponentDefinition {
         		suspected.remove(context.getSource());
         	}
         	currentTime++;
+        	LOG.info("{} increased currTime to #{}", sName, currentTime);
         	//trigger(new TMessage(context.getSource(), context.getSource(), Transport.TCP, new HeartNodeMessage(sName,timeMaster.get(sName))), heartPort);
         }
     };	
