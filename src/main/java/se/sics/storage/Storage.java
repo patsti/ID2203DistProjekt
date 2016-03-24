@@ -1,6 +1,5 @@
 package se.sics.storage;
 
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Random;
 
@@ -17,12 +16,8 @@ import se.sics.kompics.Positive;
 import se.sics.kompics.Start;
 import se.sics.kompics.network.Network;
 import se.sics.kompics.network.Transport;
-import se.sics.kompics.timer.SchedulePeriodicTimeout;
-import se.sics.test.Node;
-import se.sics.test.Pong;
 import se.sics.test.TAddress;
 import se.sics.test.TMessage;
-import se.sics.test.Node.PingTimeout;
 
 public class Storage extends ComponentDefinition {
 	
@@ -58,9 +53,9 @@ public class Storage extends ComponentDefinition {
     		max = event.getMax();
     		self = event.getSelf();
     		
-            for(int i = 0; i < 5; i++){
+            for(int i = 0; i < 25; i++){
             	Random rand = new Random();
-            	LOG.info("Inside of me!");
+//            	LOG.info("Inside of me!");
             	int key = rand.nextInt(max-min+1)+min;
             	storage.put(key, "Ain't no holla back girl");
             }
@@ -78,13 +73,30 @@ public class Storage extends ComponentDefinition {
         	}else{
         		String value = storage.get(key);
         		LOG.info("[GetOperation] From: {} key: {} value: {} - Sending it back to: {}",self.getPort() ,key, value, context.getSource().getPort());
-        		trigger(new TMessage(self, context.getSource(), Transport.TCP, new GetOperationReply(key, value)), net);
+        		trigger(new TMessage(context.getSource(), context.getSource(), Transport.TCP, new GetOperationReply(key, value)), net);
         	}
         }
-    };	
+    };
+    
+    ClassMatchedHandler<PutOperationRequest, TMessage> putOperationRequestHandler = new ClassMatchedHandler<PutOperationRequest, TMessage>() {
+
+        @Override
+        public void handle(PutOperationRequest content, TMessage context) {
+        	int key = content.getKey();
+        	String value = content.getValue();
+        	if(!storage.containsKey(key)){
+        		LOG.info("[PutOperation] key: {} isn't in my range: My address is: {}",key, self.getPort());
+        		if(key <= max && key >= min ){
+            		LOG.info("[PutOperation] From: {} key: {} storing value: {}",self.getPort() ,key, value);
+            		storage.put(key, value);
+            	}
+        	}
+        }
+    };
     
     {
     	subscribe(getOperationRequestHandler, net);
+    	subscribe(putOperationRequestHandler, net);
     	subscribe(initHandler, storagePort);
     }
       

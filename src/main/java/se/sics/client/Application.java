@@ -1,71 +1,57 @@
-/**
- * This file is part of the ID2203 course assignments kit.
- * 
- * Copyright (C) 2009-2013 KTH Royal Institute of Technology
- *
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU General Public License
- * as published by the Free Software Foundation; either version 2
- * of the License, or (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
- */
+
 package se.sics.client;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Set;
-import java.util.TreeSet;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-
+import se.sics.kompics.ClassMatchedHandler;
 import se.sics.kompics.ComponentDefinition;
 import se.sics.kompics.Handler;
 import se.sics.kompics.Kompics;
 import se.sics.kompics.Positive;
 import se.sics.kompics.Start;
+
+import se.sics.kompics.network.Network;
+import se.sics.kompics.network.Transport;
 import se.sics.kompics.timer.ScheduleTimeout;
 import se.sics.kompics.timer.Timer;
+import se.sics.storage.GetOperationReply;
+import se.sics.storage.GetOperationRequestFromClient;
+import se.sics.storage.PutOperationRequest;
+import se.sics.storage.PutOperationRequestFromClient;
 import se.sics.test.TAddress;
+import se.sics.test.TMessage;
 
 public final class Application extends ComponentDefinition {
 
-	private static final Logger logger = LoggerFactory.getLogger(Application.class);
+	private static final Logger LOG = LoggerFactory.getLogger(Application.class);
 
 	private Positive<Timer> timer = requires(Timer.class);
 	private Positive<Console> console = requires(Console.class);
-//	private Positive<PerfectPointToPointLink> pp2p = requires(PerfectPointToPointLink.class);
-//	private Positive<EventuallyPerfectFailureDetector> epfd = requires(EventuallyPerfectFailureDetector.class);
+	private Positive<Network> net = requires(Network.class);
 
 	private TAddress self;
-	private Set<TAddress> neighbors;
+	private ArrayList<TAddress> nodes;
 
 	private ArrayList<String> commands;
 	private boolean blocking;
+	
 
-	public Application() {
+
+	public Application(ApplicationInit event) {
 		subscribe(handleStart, control);
-//		subscribe(handleContinue, timer);
 		subscribe(handleConsoleInput, console);
-//		subscribe(handlePp2pMessage, pp2p);
-//		subscribe(handleSuspect, epfd);
-//		subscribe(handleRestore, epfd);
-
-//		self = event.getSelfAddress();
-//		neighbors = new TreeSet<Address>(event.getAllAddresses());
-		neighbors.remove(self);
-
-//		commands = new ArrayList<String>(Arrays.asList(event.getCommandScript().split(":")));
-//        commands.add("$DONE");
+		
+		
+	
+		nodes = event.getAllAddresses();
+		self = event.getSelfAddress();
+		
+		commands = new ArrayList<String>(Arrays.asList(event.getCommandScript().split(":")));
+        commands.add("$DONE");
         blocking = false;
 	}
 
@@ -75,6 +61,7 @@ public final class Application extends ComponentDefinition {
 			doNextCommand();
 		}
 	};
+	
 
 
 
@@ -91,47 +78,86 @@ public final class Application extends ComponentDefinition {
 	};
 
 
-
 	private final void doNextCommand() {
 		while (!blocking && !commands.isEmpty()) {
             doCommand(commands.remove(0));
 		}
 	}
+	
 
 	private void doCommand(String cmd) {
-//		if (cmd.startsWith("P")) {
-//			doPerfect(cmd.substring(1));
-//		} else 
-		if (cmd.startsWith("S")) {
+		
+		if (cmd.startsWith("G")) {
+			doGET(cmd.substring(3));
+		} 
+		else if(cmd.startsWith("P")){
+			doPUT(cmd.substring(3));
+		}
+		else if (cmd.startsWith("S")) {
 			doSleep(Integer.parseInt(cmd.substring(1)));
 		} else if (cmd.startsWith("X")) {
 			doShutdown();
 		} else if (cmd.equals("help")) {
 			doHelp();
 		} else if (cmd.equals("$DONE")) {
-			logger.info("DONE ALL OPERATIONS");
+			LOG.info("DONE ALL OPERATIONS");
 		} else {
-			logger.info("Bad command: '{}'. Try 'help'", cmd);
+			LOG.info("Bad command: '{}'. Try 'help'", cmd);
 		}
 	}
 
 	private final void doHelp() {
-		logger.info("Available commands: P<m>, S<n>, help, X");
-		logger.info("Pm: sends perfect message 'm' to all neighbors");
-		logger.info("Sn: sleeps 'n' milliseconds before the next command");
-		logger.info("help: shows this help message");
-		logger.info("X: terminates this process");
+		LOG.info("Available commands: GET<key>, S<n>, help, X");
+		LOG.info("Get<key>: sends a GET to a all nodes");
+		LOG.info("Sn: sleeps 'n' milliseconds before the next command");
+		LOG.info("help: shows this help message");
+		LOG.info("X: terminates this process");
 	}
+	
+    private final void doGET(String key) {
+    	
+    	int keyStart = key.indexOf("<");
+    	int keyEnd = key.indexOf(">");
+    	key = key.substring(keyStart+1, keyEnd);
+    	System.out.println("[KEY] "+ key);
+    	
+    	TAddress node = nodes.get(2);
+		LOG.info("Sending GET<key> {} to Port {}", key, node.getPort());
+		trigger(new TMessage(self, node, Transport.TCP, new GetOperationRequestFromClient(Integer.parseInt(key)) ), net);
+    	
 
-//    private final void doPerfect(String message) {
-//		for (Address neighbor : neighbors) {
-//			logger.info("Sending perfect message {} to {}", message, neighbor);
-//			trigger(new Pp2pSend(neighbor, new Pp2pMessage(self, message)), pp2p);
+//		for (TAddress node : nodes) {
+//			LOG.info("Sending GET<key> {} to Port {}", key, node.getPort());
+//			trigger(new TMessage(self, node, Transport.TCP, new GetOperationRequestFromClient(Integer.parseInt(key)) ), net);
 //		}
-//	}
+	}
+    
+    private final void doPUT(String cmd){
+    	int keyStart = cmd.indexOf("<");
+    	int keyEnd = cmd.indexOf(",");
+    	int valueStart = cmd.indexOf(",")+1;
+    	int valueEnd = cmd.indexOf(">");
+    	
+    	String key = cmd.substring(keyStart+1, keyEnd);
+    	String value = cmd.substring(valueStart, valueEnd);
+    	
+    	LOG.info("Key: "+key+" Value: "+value);
+    	TAddress node = nodes.get(2);
+		LOG.info("Sending PUT<key,value> key: {}, value: {} to Port {}", key, value, node.getPort());
+		trigger(new TMessage(self, node, Transport.TCP, new PutOperationRequestFromClient(Integer.parseInt(key), value)), net);
+    }
+    
+    
+    ClassMatchedHandler<GetOperationReply, TMessage> getReplyHandler = new ClassMatchedHandler<GetOperationReply, TMessage>() {
+
+        @Override
+        public void handle(GetOperationReply content, TMessage context) {
+        	LOG.info("[PORT: "+self.getPort()+"]"+"With my key: "+content.getKey()+" I got: "+content.getValue());
+        }
+    };
 
 	private void doSleep(long delay) {
-		logger.info("Sleeping {} milliseconds...", delay);
+		LOG.info("Sleeping {} milliseconds...", delay);
 
 		ScheduleTimeout st = new ScheduleTimeout(delay);
 //		st.setTimeoutEvent(new ApplicationContinue(st));
@@ -146,5 +172,10 @@ public final class Application extends ComponentDefinition {
 		System.err.close();
 		Kompics.shutdown();
 		blocking = true;
+	}	
+	
+	{
+		subscribe(handleStart, control);
+		subscribe(getReplyHandler, net);
 	}
 }
