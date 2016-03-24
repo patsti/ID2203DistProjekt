@@ -7,6 +7,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import init.InitStorage;
+import ports.RIWCMport;
 import ports.StoragePort;
 import se.sics.kompics.ClassMatchedHandler;
 import se.sics.kompics.ComponentDefinition;
@@ -32,6 +33,8 @@ public class Storage extends ComponentDefinition {
 	
 	Positive<Network> net = requires(Network.class);
 	Negative<StoragePort> storagePort = provides(StoragePort.class);
+//	Negative<RIWCMport> riwcmPort = provides(RIWCMport.class);
+	Positive<RIWCMport> riwcmPort = requires(RIWCMport.class);
 
 	public Storage(){
 		
@@ -53,12 +56,11 @@ public class Storage extends ComponentDefinition {
     		max = event.getMax();
     		self = event.getSelf();
     		
-            for(int i = 0; i < 25; i++){
-            	Random rand = new Random();
-//            	LOG.info("Inside of me!");
-            	int key = rand.nextInt(max-min+1)+min;
-            	storage.put(key, "Ain't no holla back girl");
-            }
+//            for(int i = 0; i < 10; i++){
+//            	Random rand = new Random();
+//            	int key = rand.nextInt(max-min+1)+min;
+//            	storage.put(key, "String value "+key);
+//            }
     	}
     };
     
@@ -74,6 +76,7 @@ public class Storage extends ComponentDefinition {
         		String value = storage.get(key);
         		LOG.info("[GetOperation] From: {} key: {} value: {} - Sending it back to: {}",self.getPort() ,key, value, context.getSource().getPort());
         		trigger(new TMessage(context.getSource(), context.getSource(), Transport.TCP, new GetOperationReply(key, value)), net);
+        		trigger(new RIWCMGetOperationRequest(key, value), riwcmPort);
         	}
         }
     };

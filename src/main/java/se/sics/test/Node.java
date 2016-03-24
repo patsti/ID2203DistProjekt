@@ -38,7 +38,7 @@ public class Node extends ComponentDefinition {
 	
     private static final Logger LOG = LoggerFactory.getLogger(Node.class);
 	
-    Positive<Network> net = requires(Network.class);
+    Positive<Network> network = requires(Network.class);
     Positive<Timer> timer = requires(Timer.class);
     Positive<BebPort> beb = requires(BebPort.class);
     Positive<StoragePort> storagePort = requires(StoragePort.class);
@@ -121,7 +121,7 @@ public class Node extends ComponentDefinition {
         public void handle(Ping content, TMessage context) {
             counter++;
             LOG.info("["+self.toString()+"]"+" Got a Ping #{}!"+" from ["+context.getSource().toString()+"]", counter);
-            trigger(new TMessage(self, context.getSource(), Transport.TCP, new Pong()), net);
+            trigger(new TMessage(self, context.getSource(), Transport.TCP, new Pong()), network);
         }
     };
     
@@ -157,7 +157,7 @@ public class Node extends ComponentDefinition {
         @Override
         public void handle(GetOperationReply content, TMessage context) {
 //        	LOG.info("[PORT: "+self.getPort()+"]"+"With my key: "+content.getKey()+" I got: "+content.getValue()+" From: "+context.getSource().getPort());
-        	trigger(new TMessage(self, context.getSource(), Transport.TCP, content), net);
+        	trigger(new TMessage(self, context.getSource(), Transport.TCP, content), network);
         }
     };
     
@@ -175,10 +175,10 @@ public class Node extends ComponentDefinition {
     {
         subscribe(startHandler, control);
         subscribe(timeoutHandler, timer);
-        subscribe(pingHandler, net);
-        subscribe(getOperationHandler, net);
-        subscribe(putOperationHandler, net);
-        subscribe(getReplyHandler, net);
+        subscribe(pingHandler, network);
+        subscribe(getOperationHandler, network);
+        subscribe(putOperationHandler, network);
+        subscribe(getReplyHandler, network);
         
     }
 
