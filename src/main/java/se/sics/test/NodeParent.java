@@ -6,6 +6,7 @@ import java.util.LinkedList;
 import Heart.Heartbeat;
 import ports.BebPort;
 import ports.StoragePort;
+import ports.HeartbeatPort;
 import se.sics.beb.BEBroadcast;
 import se.sics.kompics.Channel;
 import se.sics.kompics.Component;
@@ -31,6 +32,7 @@ public class NodeParent extends ComponentDefinition{
         
         for(TAddress addr: addresses){
         	
+        	
         	counter += 20;
         	
         	            
@@ -49,12 +51,14 @@ public class NodeParent extends ComponentDefinition{
             Component heart = create(Heartbeat.class, Init.NONE);
             
             connect(node.getNegative(BebPort.class), beb.getPositive(BebPort.class), Channel.TWO_WAY);
+            connect(heart.getNegative(BebPort.class), beb.getPositive(BebPort.class), Channel.TWO_WAY);
             connect(heart.getNegative(Network.class), network.getPositive(Network.class), Channel.TWO_WAY);
             connect(storage.getNegative(Network.class), network.getPositive(Network.class), Channel.TWO_WAY);
             connect(beb.getNegative(Network.class), network.getPositive(Network.class), Channel.TWO_WAY);
             connect(node.getNegative(Timer.class), timer.getPositive(Timer.class), Channel.TWO_WAY);
             connect(node.getNegative(Network.class), network.getPositive(Network.class), Channel.TWO_WAY);
             connect(node.getNegative(StoragePort.class), storage.getPositive(StoragePort.class), Channel.TWO_WAY);
+            connect(node.getNegative(HeartbeatPort.class), heart.getPositive(HeartbeatPort.class), Channel.TWO_WAY);
         }
     }
     

@@ -19,10 +19,12 @@
  */
 package Heart;
 
-import se.sics.kompics.Event;
+import java.io.Serializable;
+
+import se.sics.kompics.KompicsEvent;
 import se.sics.test.TAddress;
 
-public class Restore extends Event {
+public class Restore implements KompicsEvent, Serializable {
 
 	private final TAddress source;
 
