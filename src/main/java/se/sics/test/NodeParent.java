@@ -7,6 +7,7 @@ import org.apache.log4j.PropertyConfigurator;
 
 import Heart.Heartbeat;
 import ports.BebPort;
+import ports.HeartbeatPort;
 import ports.RIWCMport;
 import ports.StoragePort;
 import se.sics.beb.BEBroadcast;
@@ -65,7 +66,7 @@ public class NodeParent extends ComponentDefinition{
         
         
         //BACKUP
-//        connect(heart.getNegative(Network.class), network.getPositive(Network.class), Channel.TWO_WAY);
+//        connect(heart.getNegative(Network.class), network, Channel.TWO_WAY);
 //        connect(storage.getNegative(Network.class), network.getPositive(Network.class), Channel.TWO_WAY);
 //        connect(beb.getNegative(Network.class), network.getPositive(Network.class), Channel.TWO_WAY);
         
@@ -76,6 +77,8 @@ public class NodeParent extends ComponentDefinition{
         connect(riwcm.getNegative(Network.class), network, Channel.TWO_WAY);
         connect(node.getNegative(Timer.class), timer, Channel.TWO_WAY);
         connect(node.getNegative(BebPort.class), beb.getPositive(BebPort.class), Channel.TWO_WAY);
+        connect(heart.getNegative(BebPort.class), beb.getPositive(BebPort.class), Channel.TWO_WAY);
+        connect(node.getNegative(HeartbeatPort.class), heart.getPositive(HeartbeatPort.class), Channel.TWO_WAY);
         
 //        connect(node.getNegative(Timer.class), timer.getPositive(Timer.class), Channel.TWO_WAY);
 //        connect(node.getNegative(Network.class), network.getPositive(Network.class), Channel.TWO_WAY);

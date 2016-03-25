@@ -82,7 +82,7 @@ public class BEBroadcast extends ComponentDefinition{
     		
     		LOG.info("\t\t[Broadcasting readBebDataMessage] ");
     		for(TAddress addr: replicationGroup){
-    			LOG.info("\t\t[ADDRESS] "+addr.toString());
+//    			LOG.info("\t\t[ADDRESS] "+addr.toString());
     			trigger(new TMessage(self, addr, Transport.TCP, content), network);
     		}
     		LOG.info("\t\t[ADDRESS SELF] "+self.toString());
